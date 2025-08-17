@@ -1,6 +1,9 @@
 # Excluir repositorio completo de Superset
 superset/
 
+# Exluir Claude
+.claude/
+
 # Archivos temporales y logs
 *.log
 *.tmp
