@@ -1,295 +1,258 @@
-# 🎯 Apache Superset Embedding - Integración con Aplicaciones Externas
+# 📊 Apache Superset Embedding - Integración HTML/JavaScript
 
-[![Estado del Proyecto](https://img.shields.io/badge/Estado-Completado-brightgreen)](https://github.com)
-[![Apache Superset](https://img.shields.io/badge/Apache%20Superset-Compatible-blue)](https://superset.apache.org/)
-[![Licencia](https://img.shields.io/badge/Licencia-MIT-yellow)](LICENSE)
+## 📄 Descripción
 
-## 📄 **Descripción**
+Proyecto para integrar **Apache Superset** en aplicaciones web usando iframes con autenticación transparente mediante guest tokens. 
 
-Proyecto completo para integrar **Apache Superset** en aplicaciones externas (especialmente **Odoo**) usando iframes con autenticación transparente mediante guest tokens. La solución permite embeber dashboards de Superset directamente en otras aplicaciones web sin requerir login adicional.
+## ✅ Estado Actual
 
-## ✅ **Estado Actual**
+- **✅ 100% Funcional** - Ejemplo HTML funcionando
+- **✅ Problema CORS resuelto** - URLs con barra final obligatoria
+- **✅ SDK oficial** - Integración con `@superset-ui/embedded-sdk`
+- **✅ Documentación clara** - Guías simplificadas
 
-- **✅ 100% Funcional** - Listo para implementación en producción
-- **✅ Configuración CORS** completa con autenticación guest token
-- **✅ Aplicación de ejemplo** funcionando perfectamente
-- **✅ Documentación completa** y guías paso a paso
+## 🚀 Demo Rápida
 
-## 🚀 **Demo Rápida**
+```bash
+# 1. Iniciar Superset
+cd superset
+docker-compose -f docker-compose-non-dev.yml up -d
 
-1. **Configurar Superset** con los archivos de configuración incluidos
-2. **Ejecutar script de embedding**: `./setup_embedding.sh`
-3. **Abrir ejemplo**: `python3 -m http.server 8080` → http://localhost:8080/iframe-example.html
+# 2. Configurar embedding
+./setup_embedding.sh
 
-## 📁 **Estructura del Proyecto**
+# 3. Abrir ejemplo
+python3 -m http.server 8080
+# → http://localhost:8080/iframe-example.html
+```
+
+## 📁 Estructura del Proyecto
 
 ```
-embedded_superset/
-├── README.md                                    # 📖 Este archivo - Guía principal
-├── iframe-example.html                          # 🚀 Aplicación de ejemplo funcionando
-├── setup_embedding.sh                           # 🔧 Script de configuración automática
-├── README_INTEGRATION.md                        # 📋 Documentación técnica completa
-├── CONFIGURATION_CHANGES.md                     # ⚙️ Detalles de cambios de configuración
-├── .gitignore                                   # 🚫 Excluye carpeta superset/ del repo
-└── config_files/                                # 📁 Archivos de configuración preparados
-    ├── superset_config_docker.py                # ⚡ Configuración core de Superset
-    └── docker-compose-non-dev.yml               # 🐳 Configuración Docker corregida
-
-# Después de seguir las instrucciones de instalación:
-└── superset/                                    # 📁 Repositorio oficial de Superset (no en GitHub)
-    ├── docker-compose-non-dev.yml               # ← Copiado desde config_files/
+apache-superset-embedding/
+├── README.md                                    # 📖 Esta guía principal
+├── README_INTEGRATION.md                        # 📋 Documentación técnica
+├── iframe-example.html                          # 🚀 Ejemplo HTML funcionando
+├── setup_embedding.sh                           # 🔧 Script configuración automática
+└── superset/                                    # 📁 Repositorio Apache Superset
+    ├── docker-compose-non-dev.yml               
     └── docker/pythonpath_dev/
-        └── superset_config_docker.py            # ← Copiado desde config_files/
+        └── superset_config_docker.py            # ⚡ Configuración embedding
 ```
 
-### **⚠️ Nota Importante**
-- La carpeta `superset/` NO se incluye en este repositorio (está en `.gitignore`)
-- Los usuarios deben clonar Superset oficialmente y aplicar nuestras configuraciones
-- Esto garantiza que siempre usen la **última versión** de Apache Superset
+## ⚠️ Problema CORS Crítico - RESUELTO
 
-## 📚 **Documentación**
+### **El Problema:**
+```javascript
+// ❌ ERROR: CORS blocked from 'http://localhost:8080'
+Access to fetch at 'http://192.168.1.137:8088/health' has been blocked by CORS policy
+```
 
-| Documento | Descripción |
-|-----------|-------------|
-| **[README_INTEGRATION.md](README_INTEGRATION.md)** | 📋 **Guía técnica completa** - Configuración paso a paso, flujo de autenticación, y roadmap para Odoo |
-| **[CONFIGURATION_CHANGES.md](CONFIGURATION_CHANGES.md)** | ⚙️ **Documentación técnica detallada** - Todos los cambios realizados en archivos de configuración |
-| **[iframe-example.html](iframe-example.html)** | 🚀 **Aplicación de ejemplo** - Implementación completa HTML/JavaScript funcionando |
+### **La Solución:**
+**URLs DEBEN terminar en barra final `/`**
 
----
+```python
+# ❌ INCORRECTO (causa errores CORS):
+CORS_OPTIONS = {
+    "origins": ["http://localhost:8080"]  # Sin barra final
+}
 
-## 🔑 **Características Principales**
+# ✅ CORRECTO (funciona perfectamente):
+CORS_OPTIONS = {
+    "origins": ["http://localhost:8080/"]  # CON barra final
+}
+```
 
-### **✅ Configuración CORS Funcional**
-- URLs deben terminar obligatoriamente en barra final `/`
-- Configuración completa para múltiples dominios y puertos
-- Compatible con desarrollo local y producción
+**Configuración completa en `superset/docker/pythonpath_dev/superset_config_docker.py`:**
 
-### **✅ Autenticación Guest Token**
-- Sistema de guest tokens automático para acceso sin login
-- Integración con SDK oficial de Superset
-- Flujo de autenticación transparente para usuarios finales
+```python
+CORS_OPTIONS = {
+    "origins": [
+        # ⚠️ IMPORTANTE: URLs CON barra final "/"
+        "http://localhost:8000/", "http://localhost:8080/", "http://localhost:9000/",
+        "http://127.0.0.1:8000/", "http://127.0.0.1:8080/", "http://127.0.0.1:9000/",
+        "http://192.168.1.137:8080/", "http://192.168.1.137:9000/",
+        
+        # Odoo ports
+        "http://localhost:8069/", "http://127.0.0.1:8069/", "http://192.168.1.137:8069/",
+        
+        # Para desarrollo local
+        "null",
+    ],
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "supports_credentials": True
+}
+```
 
-### **✅ Configuración de Seguridad**
-- CSRF y Talisman configurados para development y production
-- Row Level Security (RLS) preparado para permisos granulares
-- Configuración de iframe embedding habilitada
+## 🔧 Configuración Crítica
 
-### **✅ SDK Oficial Integrado**
-- Uso del SDK oficial `@superset-ui/embedded-sdk`
-- Configuración automática de tamaño de iframe
-- Manejo robusto de errores y estados de carga
+### 1. Feature Flags (Obligatorio)
+```python
+FEATURE_FLAGS = {
+    "EMBEDDED_SUPERSET": True,  # ⚠️ CRÍTICO - Sin esto no funciona
+}
+```
 
-## 🛠️ **Instalación y Configuración**
+### 2. Guest Tokens
+```python
+GUEST_TOKEN_JWT_SECRET = "mi-clave-superset-local-jwt-secret-minimo-32-caracteres-2024"
+GUEST_TOKEN_JWT_EXP_SECONDS = 300  # 5 minutos
+```
 
-### **1. Prerequisitos**
+### 3. Seguridad Development
+```python
+WTF_CSRF_ENABLED = False  # ⚠️ Solo para development
+TALISMAN_ENABLED = False  # ⚠️ Solo para development
+ENABLE_IFRAME_EMBEDDING = True
+```
+
+## 🛠️ Instalación
+
+### Prerequisitos
 - Docker y Docker Compose
-- `jq` para procesamiento JSON
-- `curl` para llamadas API
-- `git` para clonar repositorios
+- `jq`, `curl`, `git`
 
-### **2. Instalación Completa (Paso a Paso)**
+### Instalación Completa
 
-#### **Paso 1: Clonar este repositorio**
 ```bash
-git clone https://github.com/tu-usuario/embedded_superset.git
-cd embedded_superset
-```
-
-#### **Paso 2: Descargar e instalar Apache Superset**
-```bash
-# Clonar repositorio oficial de Superset (siempre última versión)
+# 1. Clonar repositorio oficial Superset
 git clone https://github.com/apache/superset.git
 cd superset
 
-# Configurar variables de entorno (opcional)
-cp .env.example .env
-# Editar .env si necesitas personalizar puertos o configuraciones
-```
+# 2. Aplicar configuración embedding (copiar desde este proyecto)
+cp ../superset_config_docker.py docker/pythonpath_dev/
+cp ../docker-compose-non-dev.yml .
 
-#### **Paso 3: Aplicar configuraciones para embedding**
-```bash
-# Volver al directorio del proyecto
-cd ..
-
-# Copiar archivos de configuración preparados
-cp config_files/superset_config_docker.py superset/docker/pythonpath_dev/
-cp config_files/docker-compose-non-dev.yml superset/
-
-# Verificar que los archivos se copiaron correctamente
-ls -la superset/docker/pythonpath_dev/superset_config_docker.py
-ls -la superset/docker-compose-non-dev.yml
-```
-
-#### **Paso 4: Iniciar Superset**
-```bash
-cd superset
-
-# Construir e iniciar Superset (primera vez)
+# 3. Iniciar Superset
 docker-compose -f docker-compose-non-dev.yml up -d
 
-# Esperar a que Superset esté listo (puede tomar varios minutos)
-echo "Esperando a que Superset esté listo..."
-timeout 300 bash -c 'until curl -f http://localhost:8088/health; do sleep 5; done'
-echo "✅ Superset está funcionando!"
-```
+# 4. Esperar a que esté listo
+timeout 300 bash -c 'until curl -f http://192.168.1.137:8088/health; do sleep 5; done'
 
-#### **Paso 5: Configurar embedding en dashboards**
-```bash
-# Volver al directorio del proyecto
+# 5. Configurar embedding
 cd ..
-
-# Ejecutar script de configuración automática
-./setup_embedding.sh
-```
-
-#### **Paso 6: Probar la aplicación de ejemplo**
-```bash
-# Iniciar servidor web simple
-python3 -m http.server 8080
-
-# Abrir en navegador: http://localhost:8080/iframe-example.html
-echo "🚀 Aplicación de ejemplo disponible en: http://localhost:8080/iframe-example.html"
-```
-
-### **3. Configuración Rápida (Si ya tienes Superset)**
-Si ya tienes Apache Superset instalado:
-
-```bash
-# 1. Clonar este repositorio
-git clone https://github.com/tu-usuario/embedded_superset.git
-cd embedded_superset
-
-# 2. Copiar configuraciones a tu instalación existente
-cp config_files/superset_config_docker.py [ruta-a-tu-superset]/docker/pythonpath_dev/
-cp config_files/docker-compose-non-dev.yml [ruta-a-tu-superset]/
-
-# 3. Reiniciar Superset
-cd [ruta-a-tu-superset]
-docker-compose -f docker-compose-non-dev.yml restart superset
-
-# 4. Configurar embedding
-cd [ruta-a-este-proyecto]
 ./setup_embedding.sh
 
-# 5. Probar ejemplo
-python3 -m http.server 8080
-```
-
-## 🔧 **Configuración Técnica**
-
-### **Archivos Modificados:**
-1. **`superset_config_docker.py`** - Configuración principal
-   - Feature flags para embedding
-   - Configuración CORS con URLs correctas
-   - Guest token configuration
-   - Configuración de seguridad
-
-2. **`docker-compose-non-dev.yml`** - Montaje de volúmenes corregido
-   - Rutas de archivos de configuración corregidas
-   - Montaje adecuado de pythonpath_dev
-
-### **Configuración Crítica:**
-```python
-# En superset_config_docker.py
-FEATURE_FLAGS = {"EMBEDDED_SUPERSET": True}  # ⚠️ CRÍTICO
-ENABLE_CORS = True
-CORS_OPTIONS = {
-    "origins": ["http://localhost:3000/"],  # ⚠️ Barra final obligatoria
-}
-WTF_CSRF_ENABLED = False  # Para development
-GUEST_TOKEN_JWT_SECRET = "clave-minimo-32-caracteres"
-```
-
----
-
-## 🎨 **Aplicación de Ejemplo**
-
-### **HTML/iframe Example**
-```bash
+# 6. Probar ejemplo
 python3 -m http.server 8080
 # Abrir: http://localhost:8080/iframe-example.html
 ```
 
-**Características:**
-- ✅ **Interfaz estilo Odoo** - Simulación realista de integración
-- ✅ **SDK oficial integrado** - Uso de `@superset-ui/embedded-sdk`
-- ✅ **Autenticación automática** - Guest tokens transparentes
-- ✅ **Manejo de errores** - Estados de carga y error robusto
-- ✅ **Responsive design** - Compatible con diferentes tamaños de pantalla
-- ✅ **Lista de dashboards** - Carga automática de dashboards disponibles
+## 🎯 Implementación JavaScript
 
-## 🎯 **Uso en Producción**
+### Flujo Básico:
+```javascript
+// 1. Obtener access token admin
+const response = await fetch('http://192.168.1.137:8088/api/v1/security/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        username: 'admin',
+        password: 'admin',
+        provider: 'db'
+    })
+});
+const accessToken = (await response.json()).access_token;
 
-### **Para Odoo**
-El ejemplo HTML incluido (`iframe-example.html`) simula exactamente cómo se vería la integración en Odoo:
+// 2. Generar guest token
+const guestResponse = await fetch('http://192.168.1.137:8088/api/v1/security/guest_token/', {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        user: { username: 'guest_user', first_name: 'Guest', last_name: 'User' },
+        resources: [{ type: 'dashboard', id: 'dashboard-uuid' }],
+        rls: []
+    })
+});
+const guestToken = (await guestResponse.json()).token;
 
-1. **Controlador Python** para generar guest tokens
-2. **Vista XML** con el SDK de Superset embebido
-3. **Verificación de permisos** basada en usuarios/grupos de Odoo
-4. **URLs de embedding** configuradas en modelo de datos
+// 3. Embeber con SDK oficial
+await supersetEmbeddedSdk.embedDashboard({
+    id: "dashboard-uuid",
+    supersetDomain: "http://192.168.1.137:8088",
+    mountPoint: document.getElementById('superset-container'),
+    fetchGuestToken: () => guestToken,
+    dashboardUiConfig: {
+        hideTitle: false,
+        hideTab: false,
+        hideChartControls: false,
+    }
+});
 
-### **Para Otras Aplicaciones**
-La configuración es compatible con cualquier aplicación web que pueda:
-- Hacer llamadas HTTP a APIs REST
-- Renderizar JavaScript y crear iframes
-- Manejar autenticación de usuarios
+// 4. Ajustar tamaño iframe
+setTimeout(() => {
+    const iframe = container.querySelector('iframe');
+    if (iframe) {
+        iframe.style.width = '100%';
+        iframe.style.height = '600px';
+        iframe.style.border = 'none';
+    }
+}, 1000);
+```
 
----
+## ⚠️ Problemas Comunes
 
-## 🔐 **Configuración de Producción**
+### Error CORS:
+```
+Access to fetch blocked by CORS policy: No 'Access-Control-Allow-Origin' header
+```
+**Solución:** Verificar URLs en CORS_OPTIONS terminen en `/`
 
-### **Seguridad Reforzada**
-Para uso en producción, modifica `superset_config_docker.py`:
+### Dashboard no aparece:
+1. Verificar embedding habilitado en dashboard
+2. Usar UUID correcto (no ID numérico)
+3. Verificar guest token válido
+
+### Cambios no aplican:
+```bash
+cd superset
+docker-compose -f docker-compose-non-dev.yml restart
+```
+
+## 📚 Documentación
+
+| Archivo | Descripción |
+|---------|-------------|
+| `README_INTEGRATION.md` | 📋 Guía técnica completa |
+| `iframe-example.html` | 🚀 Ejemplo HTML funcional |
+| `setup_embedding.sh` | 🔧 Script configuración automática |
+
+## 🔐 Producción
+
+Para producción, activar seguridad en `superset_config_docker.py`:
 
 ```python
-# ⚠️ CRÍTICO: Activar CSRF con excepciones específicas
+# Activar CSRF con excepciones
 WTF_CSRF_ENABLED = True
 WTF_CSRF_EXEMPT_LIST = [
     'superset.views.core.dashboard_embedded',
     'superset.security.api.guest_token'
 ]
 
-# ⚠️ CRÍTICO: CORS restrictivo solo para dominios de producción
+# CORS restrictivo
 CORS_OPTIONS = {
-    "origins": [
-        "https://tu-odoo-produccion.com/",
-        "https://tu-dominio-corporativo.com/",
-    ],
+    "origins": ["https://tu-dominio-produccion.com/"],
 }
 
-# ⚠️ CRÍTICO: Secret JWT ultra seguro (64+ caracteres)
-GUEST_TOKEN_JWT_SECRET = "clave-super-ultra-segura-produccion-64-caracteres-minimo"
+# Secret ultra seguro (64+ caracteres)
+GUEST_TOKEN_JWT_SECRET = "clave-ultra-segura-64-caracteres-minimo"
 ```
 
-## 🤝 **Contribuir**
+## 🏆 Estado
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-caracteristica`)
-3. Commit tus cambios (`git commit -m 'Añadir nueva característica'`)
-4. Push a la rama (`git push origin feature/nueva-caracteristica`)
-5. Abre un Pull Request
+**✅ FUNCIONANDO COMPLETAMENTE**
 
-## 📞 **Soporte**
-
-- **Documentación técnica**: Ver [README_INTEGRATION.md](README_INTEGRATION.md)
-- **Configuración detallada**: Ver [CONFIGURATION_CHANGES.md](CONFIGURATION_CHANGES.md)
-- **Aplicación de ejemplo**: Ver [iframe-example.html](iframe-example.html)
-
-## 📄 **Licencia**
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+- ✅ Problema CORS resuelto
+- ✅ SDK oficial integrado  
+- ✅ Ejemplo HTML operativo
+- ✅ Documentación clara
+- ✅ Listo para Odoo
 
 ---
 
-## 🏆 **Estado Final**
-
-**✅ PROYECTO COMPLETADO EXITOSAMENTE**
-
-- **🔧 Técnicamente sólido** - Configuración correcta y probada
-- **📚 Bien documentado** - Guías completas y detalladas  
-- **🚀 Escalable** - Listo para implementación en Odoo
-- **🛡️ Seguro** - Configuraciones para development y production
-- **🔄 Reproducible** - Scripts automáticos y pasos claros
-
-**🎯 Listo para:** Implementación inmediata en Odoo usando los patrones, configuraciones y código probados.
-
+**Fecha:** 17 de Agosto, 2025  
+**Estado:** ✅ Completado y documentado  
+**Ejemplo:** `iframe-example.html` disponible y funcionando
