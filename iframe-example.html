@@ -142,11 +142,22 @@
         </p>
     </div>
 
+    <div class="info-panel" style="background-color: #fff3cd; border-left: 4px solid #856404;">
+        <h3>⚠️ Configuración Requerida</h3>
+        <p><strong>Antes de usar esta aplicación, debes:</strong></p>
+        <ol>
+            <li>Configurar <code>SUPERSET_URL</code> con la IP/URL de tu Superset</li>
+            <li>Habilitar embedding en tus dashboards desde la interfaz de Superset</li>
+            <li>Reemplazar los UUIDs de ejemplo con los reales</li>
+            <li>Verificar que el servidor web esté corriendo en puerto 8080</li>
+        </ol>
+    </div>
+    
     <div class="info-panel">
         <h3>📋 Información de la Integración</h3>
         <ul>
             <li><strong>Método:</strong> Iframe con autenticación automática</li>
-            <li><strong>URL Base:</strong> <span id="superset-url">http://192.168.1.137:8088</span></li>
+            <li><strong>URL Base:</strong> <span id="superset-url">http://localhost:8088</span></li>
             <li><strong>Autenticación:</strong> Guest Token (automática)</li>
             <li><strong>Permisos:</strong> Basados en usuario de Odoo</li>
         </ul>
@@ -185,20 +196,34 @@
     </div>
 
     <script>
-        // Configuración
-        const SUPERSET_URL = 'http://192.168.1.137:8088';
-        const USERNAME = 'admin';
-        const PASSWORD = 'admin';
+        // ⚠️ CONFIGURACIÓN: Personalizar según tu entorno
+        const SUPERSET_URL = 'http://localhost:8088';    // 🔧 Cambiar por IP/URL de tu Superset
+        const USERNAME = 'admin';                        // 🔧 Usuario administrador
+        const PASSWORD = 'admin';                        // 🔧 Contraseña administrador
         
         let accessToken = null;
+        
+        // ⚡ DASHBOARDS: Reemplazar con tus UUIDs de embedding
+        // 💡 Cómo obtener UUIDs:
+        //    1. Ir a Superset > Dashboard > Settings > Embed dashboard  
+        //    2. Agregar dominios permitidos
+        //    3. Copiar el UUID que aparece
         let dashboards = [
             {
-                id: '1de70455-f2a3-4478-83b6-fc61ad9800bf',
-                dashboard_title: 'Dashboard 11 - Embedding Test',
-                uuid: '1de70455-f2a3-4478-83b6-fc61ad9800bf'
+                id: "REEMPLAZAR-CON-TU-UUID-1",         // ⚠️ UUID de embedding desde Superset
+                dashboard_title: "Tu Primer Dashboard",
+                uuid: "REEMPLAZAR-CON-TU-UUID-1"
+            },
+            {
+                id: "REEMPLAZAR-CON-TU-UUID-2",         // ⚠️ UUID de embedding desde Superset
+                dashboard_title: "Dashboard de Ventas", 
+                uuid: "REEMPLAZAR-CON-TU-UUID-2"
             }
-            // Añadir más UUIDs aquí según tengas más dashboards configurados
         ];
+        
+        // 🚨 IMPORTANTE: Los dashboards de ejemplo NO funcionarán hasta que:
+        //    1. Habilites embedding en tus dashboards
+        //    2. Reemplaces los UUIDs de arriba con los reales
         
         // Elementos DOM
         const dashboardSelect = document.getElementById('dashboard-select');
@@ -327,7 +352,7 @@
             }
         }
         
-        // Cargar dashboard usando el SDK (igual que Next.js)
+        // Cargar dashboard usando el SDK - versión simplificada
         async function loadDashboard() {
             const selectedOption = dashboardSelect.selectedOptions[0];
             if (!selectedOption || !selectedOption.value) {
@@ -335,7 +360,7 @@
                 return;
             }
             
-            const dashboardUuid = selectedOption.value; // El value ES el UUID
+            const embeddingUuid = selectedOption.value; // UUID de embedding para el SDK
             const dashboardTitle = selectedOption.textContent;
             
             try {
@@ -348,17 +373,17 @@
                     container.innerHTML = '';
                 }
                 
-                // Obtener guest token
-                const guestToken = await getGuestToken(dashboardUuid);
+                // Obtener guest token usando el UUID de embedding directamente
+                const guestToken = await getGuestToken(embeddingUuid);
                 
                 setStatus('Incrustando dashboard...', 'loading');
                 
                 // Debug: mostrar el token en consola
                 console.log('Guest Token:', guestToken);
                 
-                // Usar el SDK exactamente igual que Next.js
+                // Usar el SDK con UUID de embedding
                 await supersetEmbeddedSdk.embedDashboard({
-                    id: dashboardUuid,
+                    id: embeddingUuid,  // UUID que obtuviste de Superset
                     supersetDomain: SUPERSET_URL,
                     mountPoint: container,
                     fetchGuestToken: () => guestToken,
@@ -418,7 +443,7 @@
                 // Verificar conectividad
                 const healthResponse = await fetch(`${SUPERSET_URL}/health`);
                 if (!healthResponse.ok) {
-                    throw new Error('Superset no está disponible');
+                    throw new Error(`Superset no disponible en ${SUPERSET_URL}`);
                 }
                 
                 setStatus('Configurando dashboards...', 'loading');
