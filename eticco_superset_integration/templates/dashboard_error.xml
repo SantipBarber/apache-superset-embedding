@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="dashboard_error" name="Error Dashboard">
+        <html>
+        <head>
+            <meta charset="utf-8"/>
+            <title>Error - Superset Dashboard</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 50px; }
+                .error-box {
+                    background: #f8d7da;
+                    border: 1px solid #f5c6cb;
+                    padding: 20px;
+                    border-radius: 5px;
+                    color: #721c24;
+                    max-width: 600px;
+                    margin: 0 auto;
+                }
+                .btn {
+                    padding: 10px 20px;
+                    margin: 5px;
+                    border: none;
+                    border-radius: 3px;
+                    cursor: pointer;
+                }
+                .btn-primary { background: #007bff; color: white; }
+                .btn-secondary { background: #6c757d; color: white; }
+            </style>
+        </head>
+        <body>
+            <div class="error-box">
+                <h3>❌ Error cargando dashboard</h3>
+                <p><t t-esc="error"/></p>
+                <hr/>
+                <button onclick="window.close();" class="btn btn-secondary">Cerrar</button>
+                <button onclick="window.location.reload();" class="btn btn-primary">Reintentar</button>
+            </div>
+            <script>
+                console.log('🚨 Dashboard Error Page cargada');
+                console.log('📄 Error:', '<t t-esc="error"/>');
+            </script>
+        </body>
+        </html>
+    </template>
+</odoo>

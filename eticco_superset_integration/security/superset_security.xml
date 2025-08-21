@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Grupo de usuarios para Superset Integration -->
+    <record id="group_superset_user" model="res.groups">
+        <field name="name">Superset User</field>
+        <field name="category_id" ref="base.module_category_tools"/>
+        <field name="comment">Usuarios que pueden ver dashboards de Superset</field>
+    </record>
+    
+    <!-- Grupo de administradores para Superset Integration -->
+    <record id="group_superset_manager" model="res.groups">
+        <field name="name">Superset Manager</field>
+        <field name="category_id" ref="base.module_category_tools"/>
+        <field name="comment">Administradores que pueden configurar Superset Integration</field>
+        <field name="implied_ids" eval="[(4, ref('group_superset_user'))]"/>
+    </record>
+    
+    <!-- Asignar grupo de manager a admin por defecto -->
+    <record id="base.user_admin" model="res.users">
+        <field name="groups_id" eval="[(4, ref('group_superset_manager'))]"/>
+    </record>
+</odoo>
