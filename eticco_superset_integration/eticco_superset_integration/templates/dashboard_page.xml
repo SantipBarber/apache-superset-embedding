@@ -83,7 +83,7 @@
                             '<div style="padding: 50px; text-align: center; font-family: Arial, sans-serif;">' +
                             '<h3 style="color: #dc3545;">Error cargando dashboard</h3>' +
                             '<p><strong>Error:</strong> ' + error.message + '</p>' +
-                            '<hr style="margin: 20px 0;">' +
+                            '<hr style="margin: 20px 0;"/>' +
                             '<h4>Información de Debug:</h4>' +
                             '<div style="text-align: left; background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">' +
                             '<p><strong>Embedding UUID:</strong> <t t-esc="dashboard_uuid"/></p>' +

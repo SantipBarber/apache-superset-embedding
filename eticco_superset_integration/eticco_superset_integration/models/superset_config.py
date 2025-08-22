@@ -606,6 +606,11 @@ class SupersetDashboardViewer(models.TransientModel):
         string='UUID del Dashboard',
         required=True
     )
+    #!Cambio
+    dashboard_id = fields.Char(
+        string='ID del Dashboard',
+        required=True
+    )
     
     dashboard_title = fields.Char(
         string='Título del Dashboard',
@@ -639,32 +644,21 @@ class SupersetDashboardViewer(models.TransientModel):
             else:
                 record.dashboard_title = 'Dashboard Analytics'
  
-    @api.depends('selected_dashboard')
+    @api.depends('dashboard_uuid')
     def _compute_dashboard_info(self):
+        """Obtener información completa del dashboard"""
         for record in self:
-            if record.selected_dashboard and record.selected_dashboard not in ['no_config', 'no_dashboards', 'error']:
+            if record.dashboard_uuid:
                 try:
-                    dashboards = self._fetch_dashboards_from_superset()
-                    selected = next((d for d in dashboards if d.get('uuid') == record.selected_dashboard), None)
-                    
-                    if selected:
-                        info_lines = [
-                            f"Título: {selected.get('title', 'N/A')}",
-                            f"Descripción: {selected.get('description', 'Sin descripción')}",
-                            f"Dashboard UUID: {selected.get('uuid', 'N/A')}",
-                            f"Embedding: {'✅ Habilitado' if selected.get('embedding_enabled') else '❌ Deshabilitado'}",
-                            f"Propietarios: {', '.join(selected.get('owners', []))}"
-                        ]
-                        record.dashboard_info = '\n'.join(info_lines)
-                        _logger.info('Dashboard info calculado para UUID: %s', record.selected_dashboard)
-                    else:
-                        record.dashboard_info = 'Dashboard no encontrado'
-                        _logger.warning('Dashboard no encontrado para UUID: %s', record.selected_dashboard)
-                except Exception as e:
-                    record.dashboard_info = 'Error obteniendo información'
-                    _logger.error('Error calculando dashboard info: %s', str(e))
+                    dashboard_info = self._get_dashboard_info(record.dashboard_uuid)
+                    record.dashboard_description = dashboard_info.get('description', '')
+                    record.dashboard_owners = ', '.join(dashboard_info.get('owners', []))
+                except:
+                    record.dashboard_description = ''
+                    record.dashboard_owners = ''
             else:
-                record.dashboard_info = ''
+                record.dashboard_description = ''
+                record.dashboard_owners = ''
  
     def _get_dashboard_info(self, dashboard_uuid):
         """Obtener información de un dashboard específico"""
@@ -673,8 +667,18 @@ class SupersetDashboardViewer(models.TransientModel):
             dashboards = selector._fetch_dashboards_from_superset()
             
             dashboard = next((d for d in dashboards if d.get('uuid') == dashboard_uuid), None)
-            return dashboard or {}
-            
+
+            #!Cambio
+            _logger.error(f'AQUI VEO EL DASHBOARDDD ========================== {dashboard}')
+
+            if dashboard:
+                self.dashboard_id = dashboard['id']
+                _logger.info(f'Dashboard ID asignado: {self.dashboard_id}')
+            else:
+                _logger.warning(f'Dashboard con UUID {dashboard_uuid} no encontrado')
+
+                return dashboard or {}
+                
         except Exception as e:
             _logger.error('Error obteniendo info de dashboard %s: %s', dashboard_uuid, str(e))
             return {}
@@ -706,11 +710,14 @@ class SupersetDashboardViewer(models.TransientModel):
         """Abrir en la misma ventana"""
         self.ensure_one()
         
+        _logger.error(f'AQUI VEO EL ID: {self.dashboard_uuid}')
         if not self.dashboard_uuid:
             raise UserError(_('No hay UUID de dashboard configurado'))
         
         # URL de nuestro controlador que renderiza el HTML con SDK
-        embed_url = f"/superset/dashboard/{self.dashboard_uuid}"
+        # embed_url = f"/superset/dashboard/{self.dashboard_uuid}"
+        #!Cambio
+        embed_url = f"/superset/dashboard/{self.dashboard_id}"
         
         return {
             'type': 'ir.actions.act_url',

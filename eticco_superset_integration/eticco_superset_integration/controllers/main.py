@@ -106,23 +106,27 @@ class SupersetController(http.Controller):
  
     def _get_dashboard_by_uuid(self, config, access_token, dashboard_uuid):
         try:
-            search_url = f"{config['url']}/api/v1/dashboard/"
+            #!Cambio
+            search_url = f"{config['url']}/api/v1/dashboard/{dashboard_uuid}"
             params = {
                 'q': f'(filters:!((col:uuid,opr:eq,value:{dashboard_uuid})))'
             }
-            
+
+
             response = requests.get(
                 search_url,
                 params=params,
                 headers={'Authorization': f'Bearer {access_token}'},
                 timeout=30
             )
+            #!Cambio
+            _logger.error(f'RESPUESTA ====={response.json()}')
             
             if response.status_code == 200:
                 data = response.json()
-                results = data.get('result', [])
-                if results:
-                    return results[0]
+                result = data.get('result')
+                if result:
+                    return result
                 else:
                     _logger.warning('Dashboard con UUID %s no encontrado', dashboard_uuid)
                     return None
@@ -405,7 +409,10 @@ class SupersetController(http.Controller):
             published_dashboards = []
             for dashboard in dashboards:
                 if dashboard.get('published'):
+                    aux = dashboard['id']
+                    _logger.error(f'Id del dashboard {aux}')
                     embedding_uuid = self._get_embedding_uuid(config, access_token, dashboard['id'])
+                    _logger.error(f'Embedding_uuid del dashboard {aux}: {embedding_uuid}')
                     
                     published_dashboards.append({
                         'id': dashboard.get('id'),
