@@ -5,30 +5,58 @@
     <t t-name="eticco_superset_integration.SupersetDashboardFieldTemplate">
         <div class="o_field_superset_dashboard" t-att-class="props.class">
             
-            <!-- Información del field (opcional) -->
-            <div t-if="props.showInfo" class="superset_field_info mb-2">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="small text-muted">
-                        <i class="fa fa-dashboard"></i>
-                        Dashboard Widget
-                        <span t-if="currentDashboardId" class="badge bg-primary ms-2">
-                            Seleccionado: <t t-esc="currentDashboardId"/>
-                        </span>
+            <!-- Selector de Dashboard nativo de Odoo -->
+            <div class="superset_selector_section mb-3">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">
+                            <i class="fa fa-dashboard me-2"></i>
+                            Seleccionar Dashboard
+                        </label>
+                        <select class="form-select" 
+                                t-att-name="props.name"
+                                t-model="currentDashboardId"
+                                t-on-change="onDashboardSelectionChange">
+                            <option value="">-- Selecciona un dashboard --</option>
+                            <t t-foreach="getDashboardOptions()" t-as="option" t-key="option[0]">
+                                <option t-att-value="option[0]" 
+                                        t-att-selected="option[0] === currentDashboardId"
+                                        t-esc="option[1]">
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <div t-if="currentDashboardId and currentDashboardId not in ['no_config', 'no_dashboards', 'error']" 
+                             class="badge bg-success mt-4">
+                            <i class="fa fa-check-circle me-1"></i>
+                            Dashboard seleccionado
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Componente SupersetDashboard -->
-            <SupersetDashboard 
-                dashboardId="currentDashboardId"
-                modelName="props.record.resModel"
-                recordId="props.record.resId"
-                autoLoad="props.autoLoad"
-                className="props.class"
-                height="props.height"
-                t-on-dashboard-loaded="onDashboardLoaded"
-                t-on-dashboard-error="onDashboardError"
-            />
+            <!-- Dashboard Embedded -->
+            <div t-if="currentDashboardId and currentDashboardId not in ['no_config', 'no_dashboards', 'error']">
+                <SupersetDashboard 
+                    dashboardId="currentDashboardId"
+                    modelName="props.record.resModel"
+                    recordId="props.record.resId"
+                    autoLoad="props.autoLoad"
+                    className="props.class"
+                    height="props.height"
+                    t-on-dashboard-loaded="onDashboardLoaded"
+                    t-on-dashboard-error="onDashboardError"
+                />
+            </div>
+            
+            <!-- Placeholder cuando no hay selección -->
+            <div t-elif="!currentDashboardId or currentDashboardId in ['no_config', 'no_dashboards', 'error']" 
+                 class="superset_placeholder text-center py-5">
+                <i class="fa fa-arrow-up fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Selecciona un dashboard</h5>
+                <p class="text-muted">Elige un dashboard del menú desplegable para visualizarlo</p>
+            </div>
             
         </div>
     </t>

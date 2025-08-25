@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, onMounted, onWillUnmount, useState, useRef } from "@odoo/owl";
+import { Component, onWillStart, onMounted, onWillUnmount, onPatched, useState, useRef } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 
@@ -16,11 +16,13 @@ export class SupersetDashboard extends Component {
             loading: false,
             error: null,
             dashboardData: null,
-            isEmbedded: false
+            isEmbedded: false,
+            lastDashboardId: null
         });
 
         onWillStart(this.onWillStart.bind(this));
         onMounted(this.onMounted.bind(this));
+        onPatched(this.onPatched.bind(this));
         onWillUnmount(this.onWillUnmount.bind(this));
     }
 
@@ -31,8 +33,27 @@ export class SupersetDashboard extends Component {
 
     onMounted() {
         // Cargar dashboard si hay datos disponibles
-        if (this.props.dashboardId || this.props.autoLoad) {
+        this.state.lastDashboardId = this.props.dashboardId;
+        if (this.props.dashboardId && this.props.autoLoad) {
             this.loadDashboard();
+        }
+    }
+
+    onPatched() {
+        // Detectar cambios en dashboardId para recargar automáticamente
+        const currentId = this.props.dashboardId;
+        
+        if (currentId !== this.state.lastDashboardId) {
+            console.log('Dashboard ID cambió:', this.state.lastDashboardId, '->', currentId);
+            this.state.lastDashboardId = currentId;
+            
+            if (currentId && !['no_config', 'no_dashboards', 'error'].includes(currentId)) {
+                // Nuevo dashboard seleccionado
+                this.loadDashboard(currentId);
+            } else {
+                // Dashboard deseleccionado
+                this.clearDashboard();
+            }
         }
     }
 

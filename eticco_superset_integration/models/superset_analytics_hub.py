@@ -241,10 +241,14 @@ Propietarios: {', '.join(dashboard.get('owners', []))}"""
         """Obtener datos del dashboard para JavaScript/OWL"""
         self.ensure_one()
         
-        if not self.dashboard_loaded:
-            return {'error': 'No hay dashboard cargado'}
+        # Si no hay dashboard seleccionado, devolver error
+        if not self.selected_dashboard or self.selected_dashboard in ['no_config', 'no_dashboards', 'error']:
+            return {'error': 'No hay dashboard seleccionado'}
             
         try:
+            # Actualizar información del dashboard automáticamente
+            self._compute_dashboard_info()
+            
             utils = self.env['superset.utils']
             config = self._get_superset_config()
             
@@ -271,6 +275,9 @@ Propietarios: {', '.join(dashboard.get('owners', []))}"""
             
             embedding_data = viewer.get_embedding_data()
             utils.log_debug('Datos de embedding generados', embedding_data)
+            
+            # Marcar como cargado
+            self.dashboard_loaded = True
             
             return embedding_data
             

@@ -30,15 +30,23 @@
                 </div>
 
                 <sheet>
-                    <!-- Sección: Selector de Dashboard -->
-                    <group string="📊 Seleccionar Dashboard" invisible="not has_configuration">
-                        <field name="selected_dashboard" 
-                               options="{'no_create': True, 'no_edit': True}"
-                               widget="selection"/>
+                    <!-- Sección: Selector de Dashboard con Auto-carga -->
+                    <group string="📊 Dashboard Analytics" invisible="not has_configuration">
                         <field name="available_dashboards_count" 
                                string="Dashboards disponibles" 
                                readonly="1"/>
                     </group>
+                    
+                    <!-- Selector + Dashboard Integrado -->
+                    <div invisible="not has_configuration or available_dashboards_count == 0">
+                        <field name="selected_dashboard" 
+                               widget="superset_dashboard_field" 
+                               height="700px" 
+                               autoLoad="true"
+                               showInfo="true"
+                               nolabel="1"
+                               options="{'no_create': True, 'no_edit': True}"/>
+                    </div>
 
                     <!-- Estado de configuración -->
                     <div class="alert alert-warning" invisible="has_configuration">
@@ -71,66 +79,6 @@
                         </div>
                     </div>
 
-                    <!-- Dashboard Embedded con componente OWL -->
-                    <div invisible="not selected_dashboard or selected_dashboard in ['no_config', 'no_dashboards', 'error']">
-                        
-                        <!-- Header del dashboard -->
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <h3 class="text-primary d-flex align-items-center">
-                                    <i class="fa fa-dashboard me-2"></i>
-                                    <span>Dashboard Analytics</span>
-                                </h3>
-                                <hr/>
-                            </div>
-                        </div>
-
-                        <!-- Componente OWL SupersetDashboard -->
-                        <div class="row">
-                            <div class="col-12">
-                                <field name="selected_dashboard" 
-                                       widget="superset_dashboard_field" 
-                                       height="700px" 
-                                       autoLoad="true"
-                                       showInfo="true"
-                                       nolabel="1"/>
-                            </div>
-                        </div>
-
-                        <!-- Información del dashboard -->
-                        <div class="row mt-3">
-                            <div class="col-md-8">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6><i class="fa fa-info-circle"></i> Información del Dashboard</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <field name="current_dashboard_info" readonly="1" nolabel="1"/>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6><i class="fa fa-cog"></i> Acciones Rápidas</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="d-grid gap-2">
-                                            <button name="action_load_dashboard"
-                                                    type="object"
-                                                    string="🔄 Recargar Dashboard"
-                                                    class="btn btn-outline-primary btn-sm"/>
-                                            
-                                            <button name="action_open_settings"
-                                                    type="object"
-                                                    string="⚙️ Configuración"
-                                                    class="btn btn-outline-secondary btn-sm"/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- Instrucciones iniciales -->
                     <div invisible="selected_dashboard or not has_configuration or available_dashboards_count == 0">
