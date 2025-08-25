@@ -52,6 +52,7 @@
         'security/superset_security.xml',
         'security/ir.model.access.csv',
         'views/superset_config_views.xml',
+        'views/superset_analytics_hub_views.xml',  # Nueva vista del hub
         'templates/dashboard_page.xml',        # Template HTML para embedding
         'templates/dashboard_error.xml',       # Template HTML para errores
     ],
