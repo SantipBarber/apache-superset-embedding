@@ -11,118 +11,106 @@
         <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
-                <div name="eticco_superset_integration" string="Superset Integration">
+                <app data-string="Superset Integration" string="Superset Integration" name="eticco_superset_integration" groups="eticco_superset_integration.group_superset_manager">
                    
-                    <!-- Sección: Conexión -->
                     <block title="Conexión a Superset" help="Configure la conexión con el servidor Apache Superset">
-                        <setting string="URL del Servidor">
-                            <field name="superset_url" placeholder="http://192.168.1.137:8088"/>
-                            <div class="text-muted">
-                                URL completa del servidor Superset (incluir puerto si es necesario)
-                            </div>
-                        </setting>
-                       
-                        <setting string="Credenciales de Acceso">
+                        <setting string="Servidor Superset" help="Configure la URL y credenciales del servidor">
                             <div class="row">
+                                <div class="col-12">
+                                    <field name="superset_url" placeholder="http://192.168.1.137:8088" class="o_light_label"/>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
                                 <div class="col-6">
+                                    <label for="superset_username" class="o_light_label">Usuario</label>
                                     <field name="superset_username" placeholder="admin"/>
                                 </div>
                                 <div class="col-6">
+                                    <label for="superset_password" class="o_light_label">Contraseña</label>
                                     <field name="superset_password" password="True" placeholder="admin"/>
                                 </div>
-                            </div>
-                            <div class="text-muted">
-                                Usuario administrador con permisos de acceso a la API
                             </div>
                         </setting>
                        
                         <setting string="Configuración Avanzada">
                             <div class="row">
-                                <div class="col-6">
-                                    <label class="o_form_label" for="superset_timeout">Timeout (segundos)</label>
+                                <div class="col-4">
+                                    <label for="superset_timeout" class="o_light_label">Timeout (seg)</label>
                                     <field name="superset_timeout"/>
                                 </div>
-                                <div class="col-6">
-                                    <field name="superset_cache_tokens"/>
-                                    <label for="superset_cache_tokens" class="o_form_label">Cache de tokens</label>
+                                <div class="col-4">
+                                    <div class="o_checkbox_optional_field">
+                                        <field name="superset_cache_tokens"/>
+                                        <label for="superset_cache_tokens">Cache de tokens</label>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="text-muted">
-                                Timeout para conexiones y cache de tokens para mejor performance
+                                <div class="col-4">
+                                    <div class="o_checkbox_optional_field">
+                                        <field name="superset_debug_mode"/>
+                                        <label for="superset_debug_mode">Modo debug</label>
+                                    </div>
+                                </div>
                             </div>
                         </setting>
-                       
-                        <setting string="Estado de Conexión">
-                            <div class="d-flex align-items-center">
+                    </block>
+
+                    <block title="Estado y Diagnósticos">
+                        <setting string="Pruebas de Conexión">
+                            <div class="d-flex flex-wrap gap-2">
                                 <button name="test_superset_connection"
-                                        string="🔍 Probar Conexión"
+                                        string="Probar Conexión"
                                         type="object"
-                                        class="btn btn-primary me-2"/>
-                                <button name="clear_superset_cache"
-                                        string="🗑️ Limpiar Cache"
-                                        type="object"
-                                        class="btn btn-secondary me-2"/>
+                                        class="btn-primary"/>
                                 <button name="open_superset_dashboards"
-                                        string="📊 Ver Dashboards"
+                                        string="Ver Dashboards"
                                         type="object"
-                                        class="btn btn-info"/>
+                                        class="btn-secondary"/>
+                                <button name="clear_superset_cache"
+                                        string="Limpiar Cache"
+                                        type="object"
+                                        class="btn-light"/>
                             </div>
                             <div class="text-muted mt-2">
-                                Estado: <field name="superset_connection_status" readonly="1" class="fw-bold"/>
+                                <span>Estado: </span>
+                                <field name="superset_connection_status" readonly="1" class="fw-bold"/>
                             </div>
                             <div class="row mt-2" invisible="superset_dashboards_count == 0">
-                                <div class="col-6">
-                                    <small class="text-muted">Dashboards totales:</small>
+                                <div class="col-6 text-muted">
+                                    <small>Total dashboards: </small>
                                     <field name="superset_dashboards_count" readonly="1" class="fw-bold text-primary"/>
                                 </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Con embedding:</small>
+                                <div class="col-6 text-muted">
+                                    <small>Con embedding: </small>
                                     <field name="superset_embedding_count" readonly="1" class="fw-bold text-success"/>
                                 </div>
                             </div>
                         </setting>
                     </block>
                    
-                    <!-- Sección: Configuración del Menú -->
-                    <block title="Configuración del Menú" help="Configure dónde aparecerán los dashboards en Odoo">
-                        <setting string="Ubicación del Menú">
-                            <field name="superset_menu_parent"
-                                   options="{'no_create': True, 'no_edit': True}"
-                                   placeholder="Selecciona menú padre..."/>
-                            <div class="text-muted">
-                                Menú donde se creará el acceso a dashboards de Superset
+                    <block title="Configuración de Menús" help="Configure dónde aparecerán los dashboards en Odoo">
+                        <setting string="Crear Menú de Analytics" help="Crea automáticamente el menú para acceder a dashboards">
+                            <div class="row">
+                                <div class="col-6">
+                                    <label for="superset_menu_parent" class="o_light_label">Menú padre</label>
+                                    <field name="superset_menu_parent" 
+                                           options="{'no_create': True, 'no_edit': True}"/>
+                                </div>
+                                <div class="col-6">
+                                    <label for="superset_menu_name" class="o_light_label">Nombre del menú</label>
+                                    <field name="superset_menu_name" placeholder="Analytics"/>
+                                </div>
                             </div>
-                        </setting>
-                       
-                        <setting string="Nombre del Menú">
-                            <field name="superset_menu_name" placeholder="Analytics"/>
-                            <div class="text-muted">
-                                Nombre que tendrá el menú de dashboards en Odoo
-                            </div>
-                        </setting>
-                       
-                        <setting string="Crear Menú">
-                            <button name="create_dashboard_menu"
-                                    string="🎯 Crear Menú de Dashboards"
-                                    type="object"
-                                    class="btn btn-success"/>
-                            <div class="text-muted">
-                                Crear el menú en la ubicación seleccionada
+                            <div class="mt-3">
+                                <button name="create_dashboard_menu"
+                                        string="Crear Menú"
+                                        type="object"
+                                        class="btn-success"
+                                        icon="oi-arrow-right"/>
                             </div>
                         </setting>
                     </block>
                    
-                    <!-- Sección: Debugging -->
-                    <block title="Debugging y Desarrollo" help="Herramientas para desarrolladores">
-                        <setting string="Modo Debug">
-                            <field name="superset_debug_mode"/>
-                            <div class="text-muted">
-                                Activar logging detallado para identificar problemas
-                            </div>
-                        </setting>
-                    </block>
-                   
-                </div>
+                </app>
             </xpath>
         </field>
     </record>
