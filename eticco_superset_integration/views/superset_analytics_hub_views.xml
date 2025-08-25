@@ -101,7 +101,7 @@
                             <div id="dashboard-error" style="display: none;" class="alert alert-danger m-3">
                                 <h5>❌ Error cargando dashboard</h5>
                                 <p id="error-message">Error desconocido</p>
-                                <button type="button" class="btn btn-outline-danger" onclick="reloadDashboard()">
+                                <button name="reload_dashboard_button" class="btn btn-outline-danger" onclick="reloadDashboard()">
                                     🔄 Reintentar
                                 </button>
                             </div>
@@ -125,10 +125,10 @@
                                         <h6><i class="fa fa-cog"></i> Acciones</h6>
                                     </div>
                                     <div class="card-body">
-                                        <button type="button" class="btn btn-primary me-2" onclick="openInSuperset()">
+                                        <button name="open_in_superset_button" class="btn btn-primary me-2" onclick="openInSuperset()">
                                             🔗 Abrir en Superset
                                         </button>
-                                        <button type="button" class="btn btn-secondary" onclick="reloadDashboard()">
+                                        <button name="reload_dashboard_action_button" class="btn btn-secondary" onclick="reloadDashboard()">
                                             🔄 Recargar
                                         </button>
                                     </div>
@@ -196,7 +196,7 @@
                             var selectedValue = e.target.value;
                             console.log('Dashboard seleccionado:', selectedValue);
                             
-                            if (selectedValue && !['no_config', 'no_dashboards', 'error'].includes(selectedValue)) {
+                            if (selectedValue &amp;&amp; !['no_config', 'no_dashboards', 'error'].includes(selectedValue)) {
                                 self.loadSelectedDashboard();
                             } else {
                                 self.clearDashboard();
@@ -205,7 +205,7 @@
                     }
                     
                     // Cargar dashboard si ya hay uno seleccionado
-                    if (selector && selector.value && 
+                    if (selector &amp;&amp; selector.value &amp;&amp; 
                         !['', 'no_config', 'no_dashboards', 'error'].includes(selector.value)) {
                         setTimeout(function() {
                             self.loadSelectedDashboard();
@@ -223,7 +223,7 @@
                     // Obtener datos del dashboard desde el servidor
                     var self = this;
                     this.fetchDashboardData().then(function(data) {
-                        if (data && data.embedding_uuid) {
+                        if (data &amp;&amp; data.embedding_uuid) {
                             self.embedDashboard(data);
                         } else {
                             self.showError('Dashboard sin embedding habilitado');
@@ -244,7 +244,7 @@
                         var embeddingUuid = document.querySelector('input[name="current_embedding_uuid"]');
                         var dashboardId = document.querySelector('input[name="current_dashboard_id"]');
                         
-                        if (embeddingUuid && embeddingUuid.value) {
+                        if (embeddingUuid &amp;&amp; embeddingUuid.value) {
                             resolve({
                                 embedding_uuid: embeddingUuid.value,
                                 dashboard_id: dashboardId ? dashboardId.value : null,
@@ -305,8 +305,8 @@
                     var container = document.getElementById('superset-dashboard-container');
                     var embedUrl = '/superset/dashboard/' + data.dashboard_id;
                     
-                    container.innerHTML = '<iframe src="' + embedUrl + '" ' +
-                        'style="width: 100%; height: 600px; border: none;"></iframe>';
+                    container.innerHTML = '&lt;iframe src="' + embedUrl + '" ' +
+                        'style="width: 100%; height: 600px; border: none;"&gt;&lt;/iframe&gt;';
                 },
                 
                 // Obtener guest token (implementar llamada a servidor)
@@ -345,10 +345,10 @@
                 clearDashboard: function() {
                     var container = document.getElementById('superset-dashboard-container');
                     if (container) {
-                        container.innerHTML = '<div class="text-center py-5 text-muted">' +
-                            '<i class="fa fa-dashboard fa-3x"></i>' +
-                            '<h4>Selecciona un dashboard</h4>' +
-                            '</div>';
+                        container.innerHTML = '&lt;div class="text-center py-5 text-muted"&gt;' +
+                            '&lt;i class="fa fa-dashboard fa-3x"&gt;&lt;/i&gt;' +
+                            '&lt;h4&gt;Selecciona un dashboard&lt;/h4&gt;' +
+                            '&lt;/div&gt;';
                     }
                 }
             };
@@ -360,7 +360,7 @@
             
             function openInSuperset() {
                 var dashboardId = document.querySelector('input[name="current_dashboard_id"]');
-                if (dashboardId && dashboardId.value) {
+                if (dashboardId &amp;&amp; dashboardId.value) {
                     var url = 'http://localhost:8088/superset/dashboard/' + dashboardId.value;
                     window.open(url, '_blank');
                 }
