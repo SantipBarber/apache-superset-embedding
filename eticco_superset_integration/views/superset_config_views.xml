@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
    
-    <!-- ================================= -->
-    <!-- CONFIGURACIÓN MEJORADA EN SETTINGS -->
-    <!-- ================================= -->
-   
     <record id="res_config_settings_view_form_inherit_superset" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.inherit.superset</field>
         <field name="model">res.config.settings</field>
@@ -114,10 +110,6 @@
             </xpath>
         </field>
     </record>
- 
-    <!-- ================================= -->
-    <!-- VISOR DE DASHBOARDS MEJORADO    -->
-    <!-- ================================= -->
    
   <record id="view_superset_dashboard_viewer_form" model="ir.ui.view">
         <field name="name">superset.dashboard.viewer.form</field>
@@ -132,16 +124,13 @@
                 </header>
                
                 <sheet>
-                    <!-- DEBUG: Mostrar información del viewer -->
                     <group string="🔍 DEBUG - Dashboard Viewer" invisible="not dashboard_uuid">
                         <field name="dashboard_uuid" readonly="1" string="UUID del Dashboard"/>
                         <field name="dashboard_title" readonly="1" string="Título"/>
                     </group>
                    
-                    <!-- Dashboard embebido via iframe -->
                     <div invisible="not dashboard_uuid">
                         <h3>📊 Dashboard: <field name="dashboard_title" readonly="1" nolabel="1"/></h3>
-                        <!-- Botón para abrir dashboard en nueva ventana -->
                         <div class="text-center mt-3">
                             <button type="object"
                                     name="open_dashboard_window"
@@ -152,8 +141,6 @@
                             <small>El dashboard se abrirá en la misma ventana</small>
                         </div>
                     </div>
-                   
-                    <!-- Mensaje si no hay UUID -->
                     <div class="alert alert-warning" invisible="dashboard_uuid">
                         <h5>⚠️ No hay dashboard configurado</h5>
                         <p>Este visor necesita recibir un dashboard_uuid.</p>
@@ -163,11 +150,7 @@
             </form>
         </field>
     </record>
- 
-    <!-- ================================= -->
-    <!-- SELECTOR COMPLETO DE DASHBOARD      -->
-    <!-- ================================= -->
-   
+
    <record id="view_superset_dashboard_selector_form" model="ir.ui.view">
         <field name="name">superset.dashboard.selector.form</field>
         <field name="model">superset.dashboard.selector</field>
@@ -186,18 +169,15 @@
                 </header>
                
                 <sheet>
-                    <!-- Selector de dashboard -->
                     <group string="Seleccionar Dashboard">
                         <field name="selected_dashboard"/>
                     </group>
                    
-                    <!-- DEBUG: Mostrar información -->
                     <group string="🔍 DEBUG - Información" invisible="not selected_dashboard or selected_dashboard in ('', 'no_config', 'no_dashboards', 'error')">
                         <field name="selected_dashboard" readonly="1" string="UUID Seleccionado"/>
                         <field name="dashboard_info" readonly="1" string="Info del Dashboard"/>
                     </group>
                    
-                    <!-- Instrucciones -->
                     <div class="alert alert-info" invisible="selected_dashboard and selected_dashboard not in ('', 'no_config', 'no_dashboards', 'error')">
                         <p><strong>Instrucciones:</strong></p>
                         <ol>
@@ -207,7 +187,6 @@
                         </ol>
                     </div>
                    
-                    <!-- Test: Botón alternativo más visible -->
                     <div invisible="not selected_dashboard or selected_dashboard in ('', 'no_config', 'no_dashboards', 'error')">
                         <hr/>
                         <div class="text-center">
@@ -222,12 +201,8 @@
             </form>
         </field>
     </record>
- 
-    <!-- ================================= -->
-    <!-- ACCIONES MEJORADAS               -->
-    <!-- ================================= -->
-   
-<record id="action_superset_dashboard_selector" model="ir.actions.act_window">
+
+    <record id="action_superset_dashboard_selector" model="ir.actions.act_window">
         <field name="name">Selector de Analytics</field>
         <field name="res_model">superset.dashboard.selector</field>
         <field name="view_mode">form</field>

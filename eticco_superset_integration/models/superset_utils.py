@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 import requests
@@ -65,7 +64,6 @@ class SupersetUtils(models.AbstractModel):
             
         self.validate_config(config)
         
-        # Verificar cache si está habilitado
         cache_key = f"superset_token_{hash(config['url'] + config['username'])}"
         
         if config.get('cache_tokens') and not force_refresh:
@@ -73,10 +71,8 @@ class SupersetUtils(models.AbstractModel):
             if cached_token:
                 return cached_token
         
-        # Obtener nuevo token
         token = self._fetch_new_token(config)
         
-        # Guardar en cache si está habilitado
         if config.get('cache_tokens') and token:
             self._cache_token(cache_key, token)
             
@@ -85,8 +81,6 @@ class SupersetUtils(models.AbstractModel):
     def _get_cached_token(self, cache_key):
         """Obtener token del cache"""
         try:
-            # Implementar cache usando ir.config_parameter o similar
-            # Por simplicidad, usar un cache básico en memoria
             if hasattr(self, '_token_cache'):
                 cache_entry = self._token_cache.get(cache_key)
                 if cache_entry and cache_entry['expires'] > time.time():
@@ -101,10 +95,9 @@ class SupersetUtils(models.AbstractModel):
             if not hasattr(self, '_token_cache'):
                 self._token_cache = {}
             
-            # Cache por 4 minutos (tokens duran 5 minutos por defecto)
             self._token_cache[cache_key] = {
                 'token': token,
-                'expires': time.time() + 240  # 4 minutos
+                'expires': time.time() + 240
             }
         except Exception as e:
             _logger.debug('Error guardando token en cache: %s', str(e))
@@ -157,16 +150,9 @@ class SupersetUtils(models.AbstractModel):
             config = self.get_superset_config()
             
         try:
-            # 1. Validar configuración
             self.validate_config(config)
-            
-            # 2. Probar salud del servidor
             health_response = self._test_health_endpoint(config)
-            
-            # 3. Probar autenticación
             access_token = self.get_access_token(config, force_refresh=True)
-            
-            # 4. Probar acceso a API
             dashboards_count = self._test_api_access(config, access_token)
             
             return {

@@ -1,17 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-    <!-- ================================= -->
-    <!-- VISTA PRINCIPAL DEL HUB ANALYTICS -->
-    <!-- ================================= -->
-    
     <record id="view_superset_analytics_hub_form" model="ir.ui.view">
         <field name="name">superset.analytics.hub.form</field>
         <field name="model">superset.analytics.hub</field>
         <field name="arch" type="xml">
             <form string="Analytics Dashboard" create="false" edit="false" delete="false">
-                
-                <!-- Toolbar con controles principales -->
                 <div class="oe_button_box" name="button_box">
                     <button name="action_refresh_dashboards"
                             type="object"
@@ -30,14 +23,12 @@
                 </div>
 
                 <sheet>
-                    <!-- Sección: Selector de Dashboard con Auto-carga -->
                     <group string="📊 Dashboard Analytics" invisible="not has_configuration">
                         <field name="available_dashboards_count" 
                                string="Dashboards disponibles" 
                                readonly="1"/>
                     </group>
                     
-                    <!-- Selector + Dashboard Integrado -->
                     <div invisible="not has_configuration or available_dashboards_count == 0">
                         <field name="selected_dashboard" 
                                widget="superset_dashboard_field" 
@@ -48,7 +39,6 @@
                                options="{'no_create': True, 'no_edit': True}"/>
                     </div>
 
-                    <!-- Estado de configuración -->
                     <div class="alert alert-warning" invisible="has_configuration">
                         <div class="d-flex align-items-center">
                             <i class="fa fa-exclamation-triangle fa-2x me-3"></i>
@@ -63,7 +53,6 @@
                         </div>
                     </div>
 
-                    <!-- Sin dashboards disponibles -->
                     <div class="alert alert-info" invisible="not has_configuration or available_dashboards_count > 0">
                         <div class="d-flex align-items-center">
                             <i class="fa fa-info-circle fa-2x me-3"></i>
@@ -80,7 +69,6 @@
                     </div>
 
 
-                    <!-- Instrucciones iniciales -->
                     <div invisible="selected_dashboard or not has_configuration or available_dashboards_count == 0">
                         <div class="text-center py-5">
                             <i class="fa fa-arrow-up fa-3x text-muted"></i>
@@ -89,7 +77,6 @@
                         </div>
                     </div>
 
-                    <!-- Campos ocultos para el modelo -->
                     <field name="dashboard_loaded" invisible="1"/>
                     <field name="has_configuration" invisible="1"/>
                     <field name="current_dashboard_id" invisible="1"/>
@@ -98,10 +85,6 @@
             </form>
         </field>
     </record>
-
-    <!-- ================================= -->
-    <!-- ACCIONES PRINCIPALES DEL HUB     -->
-    <!-- ================================= -->
 
     <record id="action_superset_analytics_hub" model="ir.actions.act_window">
         <field name="name">Analytics</field>
@@ -112,7 +95,6 @@
         <field name="context">{'form_view_ref': 'eticco_superset_integration.view_superset_analytics_hub_form'}</field>
     </record>
 
-    <!-- Acción para menús dinámicos (creados desde configuración) -->
     <record id="action_superset_analytics_hub_menu" model="ir.actions.act_window">
         <field name="name">Analytics Dashboard</field>
         <field name="res_model">superset.analytics.hub</field>

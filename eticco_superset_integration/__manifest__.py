@@ -5,87 +5,70 @@
     'category': 'Tools',
     'summary': 'Integración robusta de Apache Superset en Odoo',
     'description': """
-        Módulo MVP para embeber dashboards de Apache Superset en formularios de Odoo.
+        Integración moderna de Apache Superset con componentes OWL en Odoo 17.
         
         Características principales:
+        - Hub de Analytics integrado con UX de un solo paso
+        - Componentes OWL modernos y reactivos
+        - Embedding directo con SDK @superset-ui/embedded-sdk
+        - Selección de dashboard → Carga automática
+        - Arquitectura Python limpia y modular
         - Configuración integrada en Settings de Odoo
-        - Widget superset_dashboard para cualquier formulario
-        - Embedding con SDK oficial @superset-ui/embedded-sdk
-        - Guest tokens automáticos con cache inteligente
-        - Manejo robusto de errores y logging detallado
-        - Menús dinámicos configurables
-        - Selector de dashboards con vista previa
-        - Soporte para múltiples dashboards
+        - Soporte completo para múltiples dashboards
         
         Configuración:
         1. Ir a Configuración → Ajustes → Superset Integration
-        2. Configurar URL, credenciales de Superset
-        3. Probar conexión
-        4. Crear menú de dashboards
-        5. Usar widget: <field name="campo" widget="superset_dashboard"/>
+        2. Configurar URL y credenciales de Superset
+        3. Probar conexión y crear menú Analytics
+        4. Acceder a menú Analytics → Seleccionar dashboard
         
         Requisitos Superset:
-        - EMBEDDED_SUPERSET = True
-        - CORS habilitado con URLs terminadas en "/"
-        - Dashboards con embedding habilitado manualmente
+        - EMBEDDED_SUPERSET = True en configuración
+        - CORS habilitado correctamente
+        - Dashboards con embedding habilitado
         - Guest tokens configurados
         
-        Seguridad:
-        - Grupos de usuarios específicos
-        - Permisos granulares
-        - Validación de credenciales
-        - Logs de auditoría
+        Arquitectura técnica:
+        - Modelos Python separados por responsabilidad
+        - Componentes OWL para UI reactiva
+        - Widget superset_dashboard reutilizable
+        - Validación robusta y manejo de errores
     """,
     'author': 'Eticco Freelosophy SL',
     'website': 'https://www.eticco.es',
     'license': 'LGPL-3',
-    
-    # Dependencias
     'depends': [
         'base',
         'web',
     ],
     
-    # Archivos de datos
     'data': [
-        'data/superset_data.xml',              # Configuración inicial
+        'data/superset_data.xml',
         'security/superset_security.xml',
         'security/ir.model.access.csv',
         'views/superset_config_views.xml',
-        'views/superset_analytics_hub_views.xml',  # Nueva vista del hub
-        'templates/dashboard_page.xml',        # Template HTML para embedding
-        'templates/dashboard_error.xml',       # Template HTML para errores
+        'views/superset_analytics_hub_views.xml',
     ],
     
-    # Assets frontend OWL
     'assets': {
         'web.assets_backend': [
-            # Primero los componentes JS
             'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.js',
-            # Luego los fields que dependen de componentes
             'eticco_superset_integration/static/src/fields/superset_dashboard_field.js',
-            # Templates XML
             'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.xml',
             'eticco_superset_integration/static/src/fields/superset_dashboard_field.xml',
-            # Estilos SCSS
             'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.scss',
         ],
     },
     
-    # Configuración del módulo
     'installable': True,
     'auto_install': False,
     'application': False,
     
-    # Sin hooks en Odoo 17 - usar data files para configuración inicial
-    
-    # Metadatos adicionales
     'images': ['static/description/icon.png'],
     'external_dependencies': {
-        'python': ['requests'],  # Asegurar que requests esté disponible
+        'python': ['requests'],
     },
     
-    # Configuración de desarrollo
     'development_status': 'Beta',
     'maintainers': ['tu_usuario'],
 }

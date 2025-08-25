@@ -19,43 +19,30 @@ export class SupersetDashboardField extends Component {
         this.rpc = useService("rpc");
     }
 
-    /**
-     * Obtener valor actual del campo
-     */
     get currentDashboardId() {
         return this.props.record.data[this.props.name];
     }
 
-    /**
-     * Obtener opciones del selector de dashboards
-     */
     getDashboardOptions() {
-        // Obtener las opciones desde el modelo
         const field = this.props.record.fields[this.props.name];
         if (field && field.selection) {
             return field.selection;
         }
         
-        // Fallback: opciones por defecto
         return [
             ['no_config', '⚠️ Configurar Superset en Ajustes'],
             ['no_dashboards', '❌ No hay dashboards disponibles']
         ];
     }
 
-    /**
-     * Manejar cambio en la selección de dashboard
-     */
     async onDashboardSelectionChange(event) {
         const newValue = event.target.value;
         console.log('Dashboard seleccionado:', newValue);
         
-        // Actualizar el valor en el record
         await this.props.record.update({
             [this.props.name]: newValue
         });
         
-        // El dashboard se cargará automáticamente por la reactividad del template
         if (newValue && !['no_config', 'no_dashboards', 'error'].includes(newValue)) {
             this.notification.add(
                 _t('Cargando dashboard...'),
@@ -64,9 +51,6 @@ export class SupersetDashboardField extends Component {
         }
     }
 
-    /**
-     * Callback cuando el dashboard se carga exitosamente
-     */
     onDashboardLoaded(dashboardData) {
         console.log('Dashboard cargado en field widget:', dashboardData);
         
@@ -76,9 +60,6 @@ export class SupersetDashboardField extends Component {
         );
     }
 
-    /**
-     * Callback cuando hay error cargando dashboard
-     */
     onDashboardError(error) {
         console.error('Error en dashboard field widget:', error);
         
@@ -90,11 +71,9 @@ export class SupersetDashboardField extends Component {
 }
 
 SupersetDashboardField.props = {
-    // Props estándar de field widget
     record: Object,
     name: String,
     
-    // Props opcionales para personalización
     class: { type: String, optional: true },
     height: { type: String, optional: true },
     autoLoad: { type: Boolean, optional: true },
@@ -108,7 +87,6 @@ SupersetDashboardField.defaultProps = {
 };
 
 
-// Registrar el field widget
 registry.category("fields").add("superset_dashboard_field", {
     component: SupersetDashboardField,
     supportedTypes: ["selection", "char"],

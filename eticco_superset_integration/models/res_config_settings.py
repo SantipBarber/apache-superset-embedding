@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 import requests
@@ -13,7 +12,6 @@ class ResConfigSettings(models.TransientModel):
     """Configuración extendida de Superset en Settings"""
     _inherit = 'res.config.settings'
 
-    # Campos de configuración de Superset
     superset_url = fields.Char(
         string='URL de Superset',
         config_parameter='superset.url',

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 import logging
@@ -30,8 +29,6 @@ class SupersetAnalyticsHub(models.Model):
         default=False,
         help='Indica si hay un dashboard cargado'
     )
-    
-    # Información del dashboard actual
     current_dashboard_id = fields.Integer(
         string='ID Dashboard',
         readonly=True
@@ -54,7 +51,6 @@ class SupersetAnalyticsHub(models.Model):
         compute='_compute_dashboard_info'
     )
     
-    # Estado del sistema
     has_configuration = fields.Boolean(
         string='Configurado',
         compute='_compute_system_status'
@@ -109,7 +105,7 @@ Propietarios: {', '.join(dashboard.get('owners', []))}"""
                 
                 if record.has_configuration:
                     selector = self.env['superset.dashboard.selector'].create({})
-                    dashboards = selector._fetch_dashboards_from_superset(config)
+                    dashboards = selector._fetch_dashboards_from_superset()
                     record.available_dashboards_count = len([d for d in dashboards if d.get('embedding_enabled')])
                 else:
                     record.available_dashboards_count = 0
@@ -125,7 +121,7 @@ Propietarios: {', '.join(dashboard.get('owners', []))}"""
                 return [('no_config', '⚠️ Configurar Superset en Ajustes')]
            
             selector = self.env['superset.dashboard.selector'].create({})
-            dashboards = selector._fetch_dashboards_from_superset(config)
+            dashboards = selector._fetch_dashboards_from_superset()
            
             selection = []
             for dashboard in dashboards:
