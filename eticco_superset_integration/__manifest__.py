@@ -57,16 +57,17 @@
         'templates/dashboard_error.xml',       # Template HTML para errores
     ],
     
-    # Assets frontend - YA NO NECESARIOS
-    # 'assets': {
-    #     'web.assets_backend': [
-    #         'eticco_superset_integration/static/src/css/superset_widget.css',
-    #         'eticco_superset_integration/static/src/js/superset_widget.js',
-    #     ],
-    #     'web.assets_qweb': [
-    #         'eticco_superset_integration/static/src/xml/superset_widget_templates.xml',
-    #     ],
-    # },
+    # Assets frontend OWL
+    'assets': {
+        'web.assets_backend': [
+            # Componentes OWL
+            'eticco_superset_integration/static/src/components/**/*.js',
+            'eticco_superset_integration/static/src/fields/**/*.js',
+            'eticco_superset_integration/static/src/components/**/*.xml',
+            'eticco_superset_integration/static/src/fields/**/*.xml',
+            'eticco_superset_integration/static/src/components/**/*.scss',
+        ],
+    },
     
     # Configuración del módulo
     'installable': True,

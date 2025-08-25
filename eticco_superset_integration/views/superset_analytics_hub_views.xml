@@ -71,66 +71,61 @@
                         </div>
                     </div>
 
-                    <!-- Dashboard cargado -->
-                    <div invisible="not dashboard_loaded">
+                    <!-- Dashboard Embedded con componente OWL -->
+                    <div invisible="not selected_dashboard or selected_dashboard in ['no_config', 'no_dashboards', 'error']">
                         
                         <!-- Header del dashboard -->
-                        <div class="row">
+                        <div class="row mb-3">
                             <div class="col-12">
-                                <h3 class="text-primary">
-                                    <i class="fa fa-dashboard"></i>
-                                    <field name="current_dashboard_title" readonly="1" nolabel="1"/>
+                                <h3 class="text-primary d-flex align-items-center">
+                                    <i class="fa fa-dashboard me-2"></i>
+                                    <span>Dashboard Analytics</span>
                                 </h3>
                                 <hr/>
                             </div>
                         </div>
 
-                        <!-- Contenedor para el dashboard embebido -->
-                        <div id="superset-dashboard-container" 
-                             style="width: 100%; min-height: 600px; border: 1px solid #dee2e6; border-radius: 4px; overflow: hidden;">
-                            
-                            <!-- Loading placeholder -->
-                            <div id="dashboard-loading" class="text-center py-5">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="sr-only">Cargando...</span>
-                                </div>
-                                <p class="mt-3">Cargando dashboard...</p>
-                            </div>
-                            
-                            <!-- Error placeholder -->
-                            <div id="dashboard-error" style="display: none;" class="alert alert-danger m-3">
-                                <h5>❌ Error cargando dashboard</h5>
-                                <p id="error-message">Error desconocido</p>
-                                <button name="reload_dashboard_button" class="btn btn-outline-danger" onclick="reloadDashboard()">
-                                    🔄 Reintentar
-                                </button>
+                        <!-- Componente OWL SupersetDashboard -->
+                        <div class="row">
+                            <div class="col-12">
+                                <field name="selected_dashboard" 
+                                       widget="superset_dashboard_field" 
+                                       height="700px" 
+                                       autoLoad="true"
+                                       showInfo="true"
+                                       nolabel="1"/>
                             </div>
                         </div>
 
                         <!-- Información del dashboard -->
                         <div class="row mt-3">
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <div class="card">
                                     <div class="card-header">
-                                        <h6><i class="fa fa-info-circle"></i> Información</h6>
+                                        <h6><i class="fa fa-info-circle"></i> Información del Dashboard</h6>
                                     </div>
                                     <div class="card-body">
                                         <field name="current_dashboard_info" readonly="1" nolabel="1"/>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="card">
                                     <div class="card-header">
-                                        <h6><i class="fa fa-cog"></i> Acciones</h6>
+                                        <h6><i class="fa fa-cog"></i> Acciones Rápidas</h6>
                                     </div>
                                     <div class="card-body">
-                                        <button name="open_in_superset_button" class="btn btn-primary me-2" onclick="openInSuperset()">
-                                            🔗 Abrir en Superset
-                                        </button>
-                                        <button name="reload_dashboard_action_button" class="btn btn-secondary" onclick="reloadDashboard()">
-                                            🔄 Recargar
-                                        </button>
+                                        <div class="d-grid gap-2">
+                                            <button name="action_load_dashboard"
+                                                    type="object"
+                                                    string="🔄 Recargar Dashboard"
+                                                    class="btn btn-outline-primary btn-sm"/>
+                                            
+                                            <button name="action_open_settings"
+                                                    type="object"
+                                                    string="⚙️ Configuración"
+                                                    class="btn btn-outline-secondary btn-sm"/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -138,7 +133,7 @@
                     </div>
 
                     <!-- Instrucciones iniciales -->
-                    <div invisible="dashboard_loaded or not has_configuration or available_dashboards_count == 0">
+                    <div invisible="selected_dashboard or not has_configuration or available_dashboards_count == 0">
                         <div class="text-center py-5">
                             <i class="fa fa-arrow-up fa-3x text-muted"></i>
                             <h4 class="text-muted mt-3">Selecciona un dashboard</h4>
@@ -146,7 +141,7 @@
                         </div>
                     </div>
 
-                    <!-- Campos ocultos para JavaScript -->
+                    <!-- Campos ocultos para el modelo -->
                     <field name="dashboard_loaded" invisible="1"/>
                     <field name="has_configuration" invisible="1"/>
                     <field name="current_dashboard_id" invisible="1"/>
@@ -178,208 +173,5 @@
         <field name="context">{}</field>
     </record>
 
-    <!-- ================================= -->
-    <!-- JAVASCRIPT PARA EMBEDDING        -->
-    <!-- ================================= -->
-
-    <template id="superset_analytics_hub_assets" name="Analytics Hub Assets">
-        <script>
-            // Variables globales para el hub de analytics
-            var SupersetAnalyticsHub = {
-                config: {},
-                currentDashboard: null,
-                
-                // Inicializar cuando cambie el dashboard
-                init: function() {
-                    console.log('SupersetAnalyticsHub: Inicializando...');
-                    this.watchDashboardChanges();
-                },
-                
-                // Observar cambios en la selección de dashboard
-                watchDashboardChanges: function() {
-                    var self = this;
-                    var selector = document.querySelector('select[name="selected_dashboard"]');
-                    
-                    if (selector) {
-                        selector.addEventListener('change', function(e) {
-                            var selectedValue = e.target.value;
-                            console.log('Dashboard seleccionado:', selectedValue);
-                            
-                            if (selectedValue &amp;&amp; !['no_config', 'no_dashboards', 'error'].includes(selectedValue)) {
-                                self.loadSelectedDashboard();
-                            } else {
-                                self.clearDashboard();
-                            }
-                        });
-                    }
-                    
-                    // Cargar dashboard si ya hay uno seleccionado
-                    if (selector &amp;&amp; selector.value &amp;&amp; 
-                        !['', 'no_config', 'no_dashboards', 'error'].includes(selector.value)) {
-                        setTimeout(function() {
-                            self.loadSelectedDashboard();
-                        }, 500);
-                    }
-                },
-                
-                // Cargar dashboard seleccionado
-                loadSelectedDashboard: function() {
-                    console.log('Cargando dashboard seleccionado...');
-                    
-                    // Mostrar loading
-                    this.showLoading();
-                    
-                    // Obtener datos del dashboard desde el servidor
-                    var self = this;
-                    this.fetchDashboardData().then(function(data) {
-                        if (data &amp;&amp; data.embedding_uuid) {
-                            self.embedDashboard(data);
-                        } else {
-                            self.showError('Dashboard sin embedding habilitado');
-                        }
-                    }).catch(function(error) {
-                        console.error('Error obteniendo datos dashboard:', error);
-                        self.showError('Error cargando dashboard: ' + error.message);
-                    });
-                },
-                
-                // Obtener datos del dashboard desde Odoo
-                fetchDashboardData: function() {
-                    return new Promise(function(resolve, reject) {
-                        // Simular llamada RPC a Odoo
-                        // En implementación real, usar odoo.rpc o similar
-                        
-                        // Por ahora, obtener datos de campos hidden
-                        var embeddingUuid = document.querySelector('input[name="current_embedding_uuid"]');
-                        var dashboardId = document.querySelector('input[name="current_dashboard_id"]');
-                        
-                        if (embeddingUuid &amp;&amp; embeddingUuid.value) {
-                            resolve({
-                                embedding_uuid: embeddingUuid.value,
-                                dashboard_id: dashboardId ? dashboardId.value : null,
-                                superset_domain: 'http://localhost:8088', // Obtener de configuración
-                                guest_token: null // Se obtendrá dinámicamente
-                            });
-                        } else {
-                            reject(new Error('No se pudieron obtener datos del dashboard'));
-                        }
-                    });
-                },
-                
-                // Embebder dashboard usando SDK de Superset
-                embedDashboard: function(data) {
-                    var self = this;
-                    var container = document.getElementById('superset-dashboard-container');
-                    
-                    if (!container) {
-                        self.showError('Contenedor no encontrado');
-                        return;
-                    }
-                    
-                    // Limpiar contenedor
-                    var loading = container.querySelector('#dashboard-loading');
-                    if (loading) loading.style.display = 'none';
-                    
-                    try {
-                        // Usar SDK de Superset si está disponible
-                        if (typeof supersetEmbeddedSdk !== 'undefined') {
-                            supersetEmbeddedSdk.embedDashboard({
-                                id: data.embedding_uuid,
-                                supersetDomain: data.superset_domain,
-                                mountPoint: container,
-                                fetchGuestToken: function() {
-                                    return self.fetchGuestToken(data.embedding_uuid);
-                                },
-                                dashboardUiConfig: {
-                                    hideTitle: false,
-                                    hideTab: false,
-                                    hideChartControls: false,
-                                    hideFilters: false
-                                }
-                            });
-                            
-                            console.log('Dashboard embebido exitosamente');
-                        } else {
-                            // Fallback: usar iframe
-                            this.embedWithIframe(data);
-                        }
-                    } catch (error) {
-                        console.error('Error embebiendo dashboard:', error);
-                        self.showError('Error embebiendo dashboard: ' + error.message);
-                    }
-                },
-                
-                // Fallback: embedder con iframe
-                embedWithIframe: function(data) {
-                    var container = document.getElementById('superset-dashboard-container');
-                    var embedUrl = '/superset/dashboard/' + data.dashboard_id;
-                    
-                    container.innerHTML = '&lt;iframe src="' + embedUrl + '" ' +
-                        'style="width: 100%; height: 600px; border: none;"&gt;&lt;/iframe&gt;';
-                },
-                
-                // Obtener guest token (implementar llamada a servidor)
-                fetchGuestToken: function(embeddingUuid) {
-                    return new Promise(function(resolve, reject) {
-                        // Implementar llamada RPC para obtener guest token
-                        // Por ahora, devolver token dummy
-                        console.warn('fetchGuestToken: Implementar llamada real al servidor');
-                        resolve('dummy-guest-token');
-                    });
-                },
-                
-                // Mostrar loading
-                showLoading: function() {
-                    var loading = document.getElementById('dashboard-loading');
-                    var error = document.getElementById('dashboard-error');
-                    
-                    if (loading) loading.style.display = 'block';
-                    if (error) error.style.display = 'none';
-                },
-                
-                // Mostrar error
-                showError: function(message) {
-                    var loading = document.getElementById('dashboard-loading');
-                    var error = document.getElementById('dashboard-error');
-                    var errorMessage = document.getElementById('error-message');
-                    
-                    if (loading) loading.style.display = 'none';
-                    if (error) error.style.display = 'block';
-                    if (errorMessage) errorMessage.textContent = message;
-                    
-                    console.error('SupersetAnalyticsHub Error:', message);
-                },
-                
-                // Limpiar dashboard
-                clearDashboard: function() {
-                    var container = document.getElementById('superset-dashboard-container');
-                    if (container) {
-                        container.innerHTML = '&lt;div class="text-center py-5 text-muted"&gt;' +
-                            '&lt;i class="fa fa-dashboard fa-3x"&gt;&lt;/i&gt;' +
-                            '&lt;h4&gt;Selecciona un dashboard&lt;/h4&gt;' +
-                            '&lt;/div&gt;';
-                    }
-                }
-            };
-            
-            // Funciones globales para botones
-            function reloadDashboard() {
-                SupersetAnalyticsHub.loadSelectedDashboard();
-            }
-            
-            function openInSuperset() {
-                var dashboardId = document.querySelector('input[name="current_dashboard_id"]');
-                if (dashboardId &amp;&amp; dashboardId.value) {
-                    var url = 'http://localhost:8088/superset/dashboard/' + dashboardId.value;
-                    window.open(url, '_blank');
-                }
-            }
-            
-            // Inicializar cuando el DOM esté listo
-            document.addEventListener('DOMContentLoaded', function() {
-                SupersetAnalyticsHub.init();
-            });
-        </script>
-    </template>
 
 </odoo>

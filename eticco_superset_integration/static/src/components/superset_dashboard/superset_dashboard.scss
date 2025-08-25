@@ -1,0 +1,178 @@
+/* Estilos para el componente SupersetDashboard OWL */
+
+.superset_dashboard_component {
+    width: 100%;
+    
+    .superset_dashboard_loading {
+        .fa-spin {
+            animation: fa-spin 1s infinite linear;
+        }
+    }
+    
+    .superset_dashboard_error {
+        .alert {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .fa-exclamation-triangle {
+            color: #dc3545;
+        }
+    }
+    
+    .superset_dashboard_info {
+        padding: 0.75rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+        
+        .text-primary {
+            color: #0d6efd !important;
+        }
+        
+        .badge {
+            font-size: 0.75em;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+    }
+    
+    .superset_dashboard_embed {
+        position: relative;
+        overflow: hidden;
+        
+        // Asegurar que el iframe de Superset ocupe todo el espacio
+        iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border: none;
+            border-radius: 0.375rem;
+        }
+        
+        // Placeholder styling
+        .d-flex.justify-content-center.align-items-center.h-100 {
+            .fa-bar-chart {
+                color: #6c757d;
+            }
+        }
+    }
+    
+    .superset_dashboard_debug {
+        details {
+            summary {
+                cursor: pointer;
+                user-select: none;
+                
+                &:hover {
+                    color: #0d6efd !important;
+                }
+            }
+            
+            .bg-light {
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                font-size: 0.8em;
+                
+                code {
+                    background: transparent;
+                    color: #e83e8c;
+                    font-size: inherit;
+                }
+            }
+        }
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+    .superset_dashboard_component {
+        .superset_dashboard_info {
+            .d-flex {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start !important;
+            }
+        }
+        
+        .superset_dashboard_embed {
+            height: 400px !important; // Altura mínima en móviles
+        }
+    }
+}
+
+// Animaciones suaves
+.superset_dashboard_component {
+    .superset_dashboard_loading,
+    .superset_dashboard_error,
+    .superset_dashboard_container {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fa-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(359deg);
+    }
+}
+
+// Estilos específicos para el embedding
+.superset_dashboard_embed {
+    // Ocultar scrollbars del iframe si es necesario
+    &.hide-scrollbars iframe {
+        scrollbar-width: none; // Firefox
+        -ms-overflow-style: none; // IE and Edge
+        
+        &::-webkit-scrollbar { // Chrome, Safari, Opera
+            display: none;
+        }
+    }
+    
+    // Loading overlay para el iframe
+    &.loading::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(248, 249, 250, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+    }
+}
+
+// Variantes de tamaño
+.superset_dashboard_component {
+    &.size-small .superset_dashboard_embed {
+        height: 300px;
+    }
+    
+    &.size-medium .superset_dashboard_embed {
+        height: 500px;
+    }
+    
+    &.size-large .superset_dashboard_embed {
+        height: 800px;
+    }
+    
+    &.size-fullscreen .superset_dashboard_embed {
+        height: calc(100vh - 200px);
+    }
+}

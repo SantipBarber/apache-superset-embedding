@@ -39,3 +39,7 @@ yarn-error.log*
 *config_local*
 *secret*
 *password*
+
+# Archivos de contexto y documentación temporal
+CONTEXT_*.md
+NEXT_PROMPT.md
