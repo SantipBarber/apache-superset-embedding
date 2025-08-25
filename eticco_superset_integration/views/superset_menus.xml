@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================= -->
+    <!-- MENÚS DE SUPERSET INTEGRATION    -->
+    <!-- ================================= -->
+
+    <!-- Menú principal de configuración en Settings/Administration -->
+    <menuitem id="menu_superset_config_root"
+              name="Superset Integration"
+              parent="base.menu_administration"
+              sequence="100"
+              groups="eticco_superset_integration.group_superset_manager"/>
+
+    <!-- Acción para la configuración -->
+    <record id="action_superset_config_settings" model="ir.actions.act_window">
+        <field name="name">Superset Configuration</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'eticco_superset_integration'}</field>
+    </record>
+
+    <!-- Submenú de configuración -->
+    <menuitem id="menu_superset_config_settings"
+              name="Configuration"
+              parent="menu_superset_config_root"
+              action="action_superset_config_settings"
+              sequence="10"
+              groups="eticco_superset_integration.group_superset_manager"/>
+
+    <!-- ================================= -->
+    <!-- MENÚS OPERACIONALES               -->
+    <!-- ================================= -->
+
+    <!-- Este menú se crea dinámicamente desde la configuración -->
+    <!-- pero podemos tener un menú de fallback -->
+    <menuitem id="menu_superset_analytics_fallback"
+              name="Analytics"
+              parent="base.menu_reporting"
+              sequence="50"
+              groups="eticco_superset_integration.group_superset_user"
+              active="False"/>
+
+    <!-- Acción para el hub de analytics -->
+    <record id="action_superset_analytics_hub_menu" model="ir.actions.act_window">
+        <field name="name">Analytics Dashboard</field>
+        <field name="res_model">superset.analytics.hub</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- Menú de analytics (normalmente creado dinámicamente) -->
+    <menuitem id="menu_superset_analytics_hub"
+              name="Analytics Hub"
+              parent="menu_superset_analytics_fallback"
+              action="action_superset_analytics_hub_menu"
+              sequence="10"
+              groups="eticco_superset_integration.group_superset_user"
+              active="False"/>
+
+</odoo>
