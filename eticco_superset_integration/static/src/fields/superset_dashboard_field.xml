@@ -11,28 +11,19 @@
                     <div class="small text-muted">
                         <i class="fa fa-dashboard"></i>
                         Dashboard Widget
-                        <span t-if="state.currentDashboardId" class="badge bg-primary ms-2">
-                            ID: <t t-esc="state.currentDashboardId"/>
+                        <span t-if="currentDashboardId" class="badge bg-primary ms-2">
+                            Seleccionado: <t t-esc="currentDashboardId"/>
                         </span>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <button t-if="state.currentDashboardId" 
-                                class="btn btn-outline-secondary btn-sm me-1" 
-                                t-on-click="reloadDashboard"
-                                title="Recargar dashboard">
-                            <i class="fa fa-refresh"></i>
-                        </button>
                     </div>
                 </div>
             </div>
 
             <!-- Componente SupersetDashboard -->
             <SupersetDashboard 
-                t-ref="dashboardComponent"
-                dashboardId="state.currentDashboardId"
+                dashboardId="currentDashboardId"
                 modelName="props.record.resModel"
                 recordId="props.record.resId"
-                autoLoad="state.autoLoad"
+                autoLoad="props.autoLoad"
                 className="props.class"
                 height="props.height"
                 t-on-dashboard-loaded="onDashboardLoaded"
@@ -42,33 +33,5 @@
         </div>
     </t>
 
-    <!-- Template para modo readonly -->
-    <t t-name="eticco_superset_integration.SupersetDashboardFieldReadonlyTemplate">
-        <div class="o_field_superset_dashboard o_field_superset_dashboard_readonly" t-att-class="props.class">
-            
-            <!-- Header simplificado para readonly -->
-            <div t-if="props.showInfo and state.currentDashboardId" class="superset_field_readonly_info mb-2">
-                <div class="d-flex align-items-center">
-                    <i class="fa fa-dashboard text-muted me-2"></i>
-                    <span class="small text-muted">Dashboard (Solo lectura)</span>
-                    <span class="badge bg-secondary ms-2">
-                        ID: <t t-esc="state.currentDashboardId"/>
-                    </span>
-                </div>
-            </div>
-
-            <!-- Componente SupersetDashboard en modo readonly -->
-            <SupersetDashboard 
-                t-ref="dashboardComponent"
-                dashboardId="state.currentDashboardId"
-                modelName="props.record.resModel"
-                recordId="props.record.resId"
-                autoLoad="state.autoLoad"
-                className="props.class + ' readonly'"
-                height="props.height"
-            />
-            
-        </div>
-    </t>
 
 </templates>

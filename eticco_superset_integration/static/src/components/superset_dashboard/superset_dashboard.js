@@ -1,15 +1,15 @@
 /** @odoo-module **/
 
 import { Component, onWillStart, onMounted, onWillUnmount, useState, useRef } from "@odoo/owl";
-import { _t } from "@web/core/l10n/translation";
-import { rpc } from "@web/core/network/rpc";
 import { useService } from "@web/core/utils/hooks";
+import { _t } from "@web/core/l10n/translation";
 
 export class SupersetDashboard extends Component {
     static template = "eticco_superset_integration.SupersetDashboardTemplate";
     
     setup() {
         this.notification = useService("notification");
+        this.rpc = useService("rpc");
         this.dashboardRef = useRef("dashboardContainer");
         
         this.state = useState({
@@ -81,7 +81,7 @@ export class SupersetDashboard extends Component {
             
             if (this.props.modelName && this.props.recordId) {
                 // Obtener datos desde el modelo
-                dashboardData = await rpc('/web/dataset/call_kw', {
+                dashboardData = await this.rpc('/web/dataset/call_kw', {
                     model: this.props.modelName,
                     method: 'get_dashboard_data_for_js',
                     args: [this.props.recordId],
@@ -89,7 +89,7 @@ export class SupersetDashboard extends Component {
                 });
             } else if (targetId) {
                 // Obtener datos directamente por ID
-                dashboardData = await rpc('/web/dataset/call_kw', {
+                dashboardData = await this.rpc('/web/dataset/call_kw', {
                     model: 'superset.analytics.hub',
                     method: 'get_dashboard_data_for_js',
                     args: [targetId],

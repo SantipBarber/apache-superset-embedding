@@ -60,12 +60,15 @@
     # Assets frontend OWL
     'assets': {
         'web.assets_backend': [
-            # Componentes OWL
-            'eticco_superset_integration/static/src/components/**/*.js',
-            'eticco_superset_integration/static/src/fields/**/*.js',
-            'eticco_superset_integration/static/src/components/**/*.xml',
-            'eticco_superset_integration/static/src/fields/**/*.xml',
-            'eticco_superset_integration/static/src/components/**/*.scss',
+            # Primero los componentes JS
+            'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.js',
+            # Luego los fields que dependen de componentes
+            'eticco_superset_integration/static/src/fields/superset_dashboard_field.js',
+            # Templates XML
+            'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.xml',
+            'eticco_superset_integration/static/src/fields/superset_dashboard_field.xml',
+            # Estilos SCSS
+            'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.scss',
         ],
     },
     
