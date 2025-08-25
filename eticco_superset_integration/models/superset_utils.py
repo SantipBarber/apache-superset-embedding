@@ -56,34 +56,6 @@ class SupersetUtils(models.AbstractModel):
             
         return True
 
-    @api.model
-    def handle_superset_request(self, func):
-        """Decorador para manejo robusto de requests a Superset"""
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except requests.exceptions.ConnectionError as e:
-                error_msg = _('No se puede conectar al servidor Superset. Verifica la URL y conectividad.')
-                _logger.error('ConnectionError: %s', str(e))
-                raise UserError(error_msg)
-            except requests.exceptions.Timeout as e:
-                error_msg = _('Timeout al conectar con Superset. El servidor no responde.')
-                _logger.error('Timeout: %s', str(e))
-                raise UserError(error_msg)
-            except requests.exceptions.HTTPError as e:
-                error_msg = _('Error HTTP %s: %s') % (e.response.status_code, str(e))
-                _logger.error('HTTPError: %s', str(e))
-                raise UserError(error_msg)
-            except requests.exceptions.RequestException as e:
-                error_msg = _('Error de red: %s') % str(e)
-                _logger.error('RequestException: %s', str(e))
-                raise UserError(error_msg)
-            except Exception as e:
-                error_msg = _('Error inesperado: %s') % str(e)
-                _logger.error('Unexpected error in superset request: %s', str(e))
-                raise UserError(error_msg)
-        return wrapper
 
     @api.model
     def get_access_token(self, config=None, force_refresh=False):
@@ -137,39 +109,46 @@ class SupersetUtils(models.AbstractModel):
         except Exception as e:
             _logger.debug('Error guardando token en cache: %s', str(e))
 
-    @handle_superset_request
     def _fetch_new_token(self, config):
         """Obtener nuevo token desde Superset API"""
-        login_url = f"{config['url']}/api/v1/security/login"
-        login_data = {
-            'username': config['username'],
-            'password': config['password'],
-            'provider': 'db'
-        }
-        
-        response = requests.post(
-            login_url,
-            json=login_data,
-            headers={'Content-Type': 'application/json'},
-            timeout=config.get('timeout', 30)
-        )
-        
-        if response.status_code == 401:
-            raise UserError(_('Credenciales incorrectas. Verifica usuario y contraseña.'))
-        elif response.status_code == 403:
-            raise UserError(_('Usuario sin permisos suficientes para acceder a Superset.'))
-        elif response.status_code != 200:
-            error_data = response.json() if response.content else {}
-            error_msg = error_data.get('message', f'Error HTTP {response.status_code}')
-            raise UserError(_('Error de autenticación: %s') % error_msg)
+        try:
+            login_url = f"{config['url']}/api/v1/security/login"
+            login_data = {
+                'username': config['username'],
+                'password': config['password'],
+                'provider': 'db'
+            }
             
-        token_data = response.json()
-        access_token = token_data.get('access_token')
-        
-        if not access_token:
-            raise UserError(_('Respuesta de login inválida: sin token de acceso'))
+            response = requests.post(
+                login_url,
+                json=login_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=config.get('timeout', 30)
+            )
             
-        return access_token
+            if response.status_code == 401:
+                raise UserError(_('Credenciales incorrectas. Verifica usuario y contraseña.'))
+            elif response.status_code == 403:
+                raise UserError(_('Usuario sin permisos suficientes para acceder a Superset.'))
+            elif response.status_code != 200:
+                error_data = response.json() if response.content else {}
+                error_msg = error_data.get('message', f'Error HTTP {response.status_code}')
+                raise UserError(_('Error de autenticación: %s') % error_msg)
+                
+            token_data = response.json()
+            access_token = token_data.get('access_token')
+            
+            if not access_token:
+                raise UserError(_('Respuesta de login inválida: sin token de acceso'))
+                
+            return access_token
+            
+        except requests.exceptions.ConnectionError:
+            raise UserError(_('No se puede conectar al servidor Superset. Verifica la URL y conectividad.'))
+        except requests.exceptions.Timeout:
+            raise UserError(_('Timeout al conectar con Superset. El servidor no responde.'))
+        except requests.exceptions.RequestException as e:
+            raise UserError(_('Error de red: %s') % str(e))
 
     @api.model
     def test_superset_connection(self, config=None):
@@ -210,37 +189,49 @@ class SupersetUtils(models.AbstractModel):
                 }
             }
 
-    @handle_superset_request
     def _test_health_endpoint(self, config):
         """Probar endpoint de salud"""
-        health_url = f"{config['url']}/health"
-        response = requests.get(health_url, timeout=config.get('timeout', 30))
-        
-        if response.status_code != 200:
-            raise UserError(_('Superset no está disponible (HTTP %s)') % response.status_code)
+        try:
+            health_url = f"{config['url']}/health"
+            response = requests.get(health_url, timeout=config.get('timeout', 30))
             
-        return response
+            if response.status_code != 200:
+                raise UserError(_('Superset no está disponible (HTTP %s)') % response.status_code)
+                
+            return response
+        except requests.exceptions.ConnectionError:
+            raise UserError(_('No se puede conectar al servidor Superset. Verifica la URL y conectividad.'))
+        except requests.exceptions.Timeout:
+            raise UserError(_('Timeout al conectar con Superset. El servidor no responde.'))
+        except requests.exceptions.RequestException as e:
+            raise UserError(_('Error de red: %s') % str(e))
 
-    @handle_superset_request
     def _test_api_access(self, config, access_token):
         """Probar acceso a la API de dashboards"""
-        dashboards_url = f"{config['url']}/api/v1/dashboard/"
-        
-        response = requests.get(
-            dashboards_url,
-            headers={'Authorization': f'Bearer {access_token}'},
-            timeout=config.get('timeout', 30)
-        )
-        
-        if response.status_code == 401:
-            raise UserError(_('Token de acceso inválido o expirado'))
-        elif response.status_code == 403:
-            raise UserError(_('Sin permisos para acceder a dashboards'))
-        elif response.status_code != 200:
-            raise UserError(_('Error accediendo a API de dashboards (HTTP %s)') % response.status_code)
+        try:
+            dashboards_url = f"{config['url']}/api/v1/dashboard/"
             
-        dashboard_data = response.json()
-        return len(dashboard_data.get('result', []))
+            response = requests.get(
+                dashboards_url,
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=config.get('timeout', 30)
+            )
+            
+            if response.status_code == 401:
+                raise UserError(_('Token de acceso inválido o expirado'))
+            elif response.status_code == 403:
+                raise UserError(_('Sin permisos para acceder a dashboards'))
+            elif response.status_code != 200:
+                raise UserError(_('Error accediendo a API de dashboards (HTTP %s)') % response.status_code)
+                
+            dashboard_data = response.json()
+            return len(dashboard_data.get('result', []))
+        except requests.exceptions.ConnectionError:
+            raise UserError(_('No se puede conectar al servidor Superset. Verifica la URL y conectividad.'))
+        except requests.exceptions.Timeout:
+            raise UserError(_('Timeout al conectar con Superset. El servidor no responde.'))
+        except requests.exceptions.RequestException as e:
+            raise UserError(_('Error de red: %s') % str(e))
 
     @api.model
     def clear_token_cache(self):
