@@ -157,7 +157,7 @@
     </record>
 
     <!-- ================================= -->
-    <!-- ACCIÓN PRINCIPAL DEL HUB         -->
+    <!-- ACCIONES PRINCIPALES DEL HUB     -->
     <!-- ================================= -->
 
     <record id="action_superset_analytics_hub" model="ir.actions.act_window">
@@ -167,6 +167,15 @@
         <field name="target">current</field>
         <field name="view_id" ref="view_superset_analytics_hub_form"/>
         <field name="context">{'form_view_ref': 'eticco_superset_integration.view_superset_analytics_hub_form'}</field>
+    </record>
+
+    <!-- Acción para menús dinámicos (creados desde configuración) -->
+    <record id="action_superset_analytics_hub_menu" model="ir.actions.act_window">
+        <field name="name">Analytics Dashboard</field>
+        <field name="res_model">superset.analytics.hub</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{}</field>
     </record>
 
     <!-- ================================= -->
