@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    
+   
     <!-- ================================= -->
     <!-- CONFIGURACIÓN MEJORADA EN SETTINGS -->
     <!-- ================================= -->
-    
+   
     <record id="res_config_settings_view_form_inherit_superset" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.inherit.superset</field>
         <field name="model">res.config.settings</field>
@@ -12,7 +12,7 @@
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <div name="eticco_superset_integration" string="Superset Integration">
-                    
+                   
                     <!-- Sección: Conexión -->
                     <block title="Conexión a Superset" help="Configure la conexión con el servidor Apache Superset">
                         <setting string="URL del Servidor">
@@ -21,7 +21,7 @@
                                 URL completa del servidor Superset (incluir puerto si es necesario)
                             </div>
                         </setting>
-                        
+                       
                         <setting string="Credenciales de Acceso">
                             <div class="row">
                                 <div class="col-6">
@@ -35,7 +35,7 @@
                                 Usuario administrador con permisos de acceso a la API
                             </div>
                         </setting>
-                        
+                       
                         <setting string="Configuración Avanzada">
                             <div class="row">
                                 <div class="col-6">
@@ -51,7 +51,7 @@
                                 Timeout para conexiones y cache de tokens para mejor performance
                             </div>
                         </setting>
-                        
+                       
                         <setting string="Estado de Conexión">
                             <div class="d-flex align-items-center">
                                 <button name="test_superset_connection"
@@ -82,7 +82,7 @@
                             </div>
                         </setting>
                     </block>
-                    
+                   
                     <!-- Sección: Configuración del Menú -->
                     <block title="Configuración del Menú" help="Configure dónde aparecerán los dashboards en Odoo">
                         <setting string="Ubicación del Menú">
@@ -93,14 +93,14 @@
                                 Menú donde se creará el acceso a dashboards de Superset
                             </div>
                         </setting>
-                        
+                       
                         <setting string="Nombre del Menú">
                             <field name="superset_menu_name" placeholder="Analytics"/>
                             <div class="text-muted">
                                 Nombre que tendrá el menú de dashboards en Odoo
                             </div>
                         </setting>
-                        
+                       
                         <setting string="Crear Menú">
                             <button name="create_dashboard_menu"
                                     string="🎯 Crear Menú de Dashboards"
@@ -111,7 +111,7 @@
                             </div>
                         </setting>
                     </block>
-                    
+                   
                     <!-- Sección: Debugging -->
                     <block title="Debugging y Desarrollo" help="Herramientas para desarrolladores">
                         <setting string="Modo Debug">
@@ -121,7 +121,7 @@
                             </div>
                         </setting>
                     </block>
-                    
+                   
                 </div>
             </xpath>
         </field>
@@ -130,7 +130,7 @@
     <!-- ================================= -->
     <!-- VISOR DE DASHBOARDS MEJORADO    -->
     <!-- ================================= -->
-    
+   
   <record id="view_superset_dashboard_viewer_form" model="ir.ui.view">
         <field name="name">superset.dashboard.viewer.form</field>
         <field name="model">superset.dashboard.viewer</field>
@@ -142,14 +142,14 @@
                             type="object"
                             class="btn-primary"/>
                 </header>
-                
+               
                 <sheet>
                     <!-- DEBUG: Mostrar información del viewer -->
                     <group string="🔍 DEBUG - Dashboard Viewer" invisible="not dashboard_uuid">
                         <field name="dashboard_uuid" readonly="1" string="UUID del Dashboard"/>
                         <field name="dashboard_title" readonly="1" string="Título"/>
                     </group>
-                    
+                   
                     <!-- Dashboard embebido via iframe -->
                     <div invisible="not dashboard_uuid">
                         <h3>📊 Dashboard: <field name="dashboard_title" readonly="1" nolabel="1"/></h3>
@@ -164,13 +164,13 @@
                             <small>El dashboard se abrirá en la misma ventana</small>
                         </div>
                     </div>
-                    
+                   
                     <!-- Mensaje si no hay UUID -->
                     <div class="alert alert-warning" invisible="dashboard_uuid">
                         <h5>⚠️ No hay dashboard configurado</h5>
                         <p>Este visor necesita recibir un dashboard_uuid.</p>
                     </div>
-                    
+                   
                 </sheet>
             </form>
         </field>
@@ -179,7 +179,7 @@
     <!-- ================================= -->
     <!-- SELECTOR COMPLETO DE DASHBOARD      -->
     <!-- ================================= -->
-    
+   
    <record id="view_superset_dashboard_selector_form" model="ir.ui.view">
         <field name="name">superset.dashboard.selector.form</field>
         <field name="model">superset.dashboard.selector</field>
@@ -196,19 +196,19 @@
                             type="object"
                             class="btn-secondary"/>
                 </header>
-                
+               
                 <sheet>
                     <!-- Selector de dashboard -->
                     <group string="Seleccionar Dashboard">
                         <field name="selected_dashboard"/>
                     </group>
-                    
+                   
                     <!-- DEBUG: Mostrar información -->
                     <group string="🔍 DEBUG - Información" invisible="not selected_dashboard or selected_dashboard in ('', 'no_config', 'no_dashboards', 'error')">
                         <field name="selected_dashboard" readonly="1" string="UUID Seleccionado"/>
                         <field name="dashboard_info" readonly="1" string="Info del Dashboard"/>
                     </group>
-                    
+                   
                     <!-- Instrucciones -->
                     <div class="alert alert-info" invisible="selected_dashboard and selected_dashboard not in ('', 'no_config', 'no_dashboards', 'error')">
                         <p><strong>Instrucciones:</strong></p>
@@ -218,7 +218,7 @@
                             <li>Se abrirá el visor completo</li>
                         </ol>
                     </div>
-                    
+                   
                     <!-- Test: Botón alternativo más visible -->
                     <div invisible="not selected_dashboard or selected_dashboard in ('', 'no_config', 'no_dashboards', 'error')">
                         <hr/>
@@ -229,7 +229,7 @@
                                     class="btn btn-primary btn-lg"/>
                         </div>
                     </div>
-                    
+                   
                 </sheet>
             </form>
         </field>
@@ -238,7 +238,7 @@
     <!-- ================================= -->
     <!-- ACCIONES MEJORADAS               -->
     <!-- ================================= -->
-    
+   
 <record id="action_superset_dashboard_selector" model="ir.actions.act_window">
         <field name="name">Selector de Analytics</field>
         <field name="res_model">superset.dashboard.selector</field>
@@ -246,7 +246,7 @@
         <field name="target">current</field>
         <field name="view_id" ref="view_superset_dashboard_selector_form"/>
     </record>
-    
+   
     <record id="action_superset_dashboard_viewer" model="ir.actions.act_window">
         <field name="name">Dashboard Viewer</field>
         <field name="res_model">superset.dashboard.viewer</field>
@@ -254,6 +254,5 @@
         <field name="target">current</field>
         <field name="view_id" ref="view_superset_dashboard_viewer_form"/>
     </record>
- 
  
 </odoo>
