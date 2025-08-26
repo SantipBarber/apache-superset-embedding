@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
+import requests
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -67,19 +68,52 @@ class SupersetAnalyticsHub(models.Model):
         for record in self:
             if record.selected_dashboard and record.selected_dashboard not in ['no_config', 'no_dashboards', 'error']:
                 try:
-                    selector = self.env['superset.dashboard.selector'].create({})
-                    dashboards = selector._fetch_dashboards_from_superset()
+                    utils = self.env['superset.utils']
+                    config = utils.get_superset_config()
+                    utils.validate_config(config)
+                    access_token = utils.get_access_token(config)
                     
-                    dashboard = next((d for d in dashboards if d.get('uuid') == record.selected_dashboard), None)
+                    dashboards_url = f"{config['url']}/api/v1/dashboard/"
+                    params = {'q': '(page:0,page_size:100)'}
                     
-                    if dashboard:
-                        record.current_dashboard_title = dashboard.get('title', 'Sin título')
-                        record.current_dashboard_id = dashboard.get('id')
-                        record.current_embedding_uuid = dashboard.get('embedding_uuid')
-                        record.current_dashboard_info = f"""Título: {dashboard.get('title', 'N/A')}
-Descripción: {dashboard.get('description', 'Sin descripción')}
-Embedding: {'✅ Habilitado' if dashboard.get('embedding_enabled') else '❌ Deshabilitado'}
-Propietarios: {', '.join(dashboard.get('owners', []))}"""
+                    response = requests.get(
+                        dashboards_url,
+                        params=params,
+                        headers={'Authorization': f'Bearer {access_token}'},
+                        timeout=config.get('timeout', 30)
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        dashboards = data.get('result', [])
+                        
+                        dashboard = next((d for d in dashboards if d.get('uuid') == record.selected_dashboard), None)
+                        
+                        if dashboard:
+                            record.current_dashboard_title = dashboard.get('dashboard_title', 'Sin título')
+                            record.current_dashboard_id = dashboard.get('id')
+                            
+                            try:
+                                embedding_url = f"{config['url']}/api/v1/dashboard/{dashboard.get('id')}/embedded"
+                                embedding_response = requests.get(
+                                    embedding_url,
+                                    headers={'Authorization': f'Bearer {access_token}'},
+                                    timeout=config.get('timeout', 30)
+                                )
+                                if embedding_response.status_code == 200:
+                                    embedding_data = embedding_response.json()
+                                    record.current_embedding_uuid = embedding_data.get('result', {}).get('uuid')
+                                else:
+                                    record.current_embedding_uuid = False
+                            except:
+                                record.current_embedding_uuid = False
+                                
+                            record.current_dashboard_info = f"""Título: {dashboard.get('dashboard_title', 'N/A')}
+                                                    Descripción: {dashboard.get('description', 'Sin descripción')}
+                                                    Embedding: {'✅ Habilitado' if record.current_embedding_uuid else '❌ Deshabilitado'}
+                                                    Propietarios: {', '.join([owner.get('username', '') for owner in dashboard.get('owners', [])])}"""
+                        else:
+                            record._reset_dashboard_info()
                     else:
                         record._reset_dashboard_info()
                 except Exception as e:
@@ -100,13 +134,49 @@ Propietarios: {', '.join(dashboard.get('owners', []))}"""
         """Computar estado del sistema"""
         for record in self:
             try:
-                config = record._get_superset_config()
+                utils = self.env['superset.utils']
+                config = utils.get_superset_config()
                 record.has_configuration = bool(config.get('url') and config.get('username') and config.get('password'))
                 
                 if record.has_configuration:
-                    selector = self.env['superset.dashboard.selector'].create({})
-                    dashboards = selector._fetch_dashboards_from_superset()
-                    record.available_dashboards_count = len([d for d in dashboards if d.get('embedding_enabled')])
+                    try:
+                        utils.validate_config(config)
+                        access_token = utils.get_access_token(config)
+                        
+                        dashboards_url = f"{config['url']}/api/v1/dashboard/"
+                        params = {'q': '(page:0,page_size:100)'}
+                        
+                        response = requests.get(
+                            dashboards_url,
+                            params=params,
+                            headers={'Authorization': f'Bearer {access_token}'},
+                            timeout=config.get('timeout', 30)
+                        )
+                        
+                        if response.status_code == 200:
+                            data = response.json()
+                            dashboards = [d for d in data.get('result', []) if d.get('published')]
+                            
+                            embedding_count = 0
+                            for dashboard in dashboards:
+                                try:
+                                    embedding_url = f"{config['url']}/api/v1/dashboard/{dashboard.get('id')}/embedded"
+                                    embedding_response = requests.get(
+                                        embedding_url,
+                                        headers={'Authorization': f'Bearer {access_token}'},
+                                        timeout=config.get('timeout', 30)
+                                    )
+                                    if (embedding_response.status_code == 200 and 
+                                        embedding_response.json().get('result', {}).get('uuid')):
+                                        embedding_count += 1
+                                except:
+                                    pass
+                            
+                            record.available_dashboards_count = embedding_count
+                        else:
+                            record.available_dashboards_count = 0
+                    except:
+                        record.available_dashboards_count = 0
                 else:
                     record.available_dashboards_count = 0
             except:
@@ -116,28 +186,80 @@ Propietarios: {', '.join(dashboard.get('owners', []))}"""
     def _get_dashboard_selection(self):
         """Obtener opciones de dashboard disponibles"""
         try:
-            config = self._get_superset_config()
+            utils = self.env['superset.utils']
+            config = utils.get_superset_config()
+            
             if not all([config.get('url'), config.get('username'), config.get('password')]):
                 return [('no_config', '⚠️ Configurar Superset en Ajustes')]
-           
-            selector = self.env['superset.dashboard.selector'].create({})
-            dashboards = selector._fetch_dashboards_from_superset()
-           
-            selection = []
-            for dashboard in dashboards:
-                if dashboard.get('embedding_enabled') and dashboard.get('embedding_uuid'):
-                    selection.append((
-                        dashboard.get('uuid'),
-                        f"📊 {dashboard.get('title', 'Sin título')}"
-                    ))
-           
-            if not selection:
-                selection = [('no_dashboards', '❌ No hay dashboards con embedding habilitado')]
+            
+            try:
+                utils.validate_config(config)
+                access_token = utils.get_access_token(config)
                 
-            return selection
-           
+                dashboards_url = f"{config['url']}/api/v1/dashboard/"
+                params = {'q': '(page:0,page_size:100)'}
+                
+                response = requests.get(
+                    dashboards_url,
+                    params=params,
+                    headers={'Authorization': f'Bearer {access_token}'},
+                    timeout=config.get('timeout', 30)
+                )
+                
+                if response.status_code != 200:
+                    return [('error', f'❌ Error HTTP: {response.status_code}')]
+                    
+                data = response.json()
+                dashboards = [d for d in data.get('result', []) if d.get('published')]
+                
+                if not dashboards:
+                    return [('no_dashboards', '❌ No hay dashboards publicados')]
+                
+                selection = []
+                
+                for dashboard in dashboards:
+                    try:
+                        embedding_url = f"{config['url']}/api/v1/dashboard/{dashboard.get('id')}/embedded"
+                        embedding_response = requests.get(
+                            embedding_url,
+                            headers={'Authorization': f'Bearer {access_token}'},
+                            timeout=config.get('timeout', 30)
+                        )
+                        
+                        embedding_enabled = False
+                        if embedding_response.status_code == 200:
+                            embedding_data = embedding_response.json()
+                            embedding_uuid = embedding_data.get('result', {}).get('uuid')
+                            embedding_enabled = bool(embedding_uuid)
+                        
+                        dashboard_title = dashboard.get('dashboard_title', 'Sin título')
+                        dashboard_uuid = dashboard.get('uuid')
+                        
+                        if embedding_enabled:
+                            selection.append((dashboard_uuid, f"✅ {dashboard_title}"))
+                        else:
+                            selection.append((dashboard_uuid, f"❌ {dashboard_title} (sin embedding)"))
+                            
+                    except Exception as e:
+                        _logger.error('Error verificando embedding para dashboard %s: %s', 
+                                    dashboard.get('id'), str(e))
+                        selection.append((
+                            dashboard.get('uuid'),
+                            f"❓ {dashboard.get('dashboard_title', 'Sin título')} (error)"
+                        ))
+                
+                if not selection:
+                    return [('no_dashboards', '❌ No hay dashboards disponibles')]
+                    
+                selection.sort(key=lambda x: (not x[1].startswith('✅'), x[1]))
+                return selection
+                
+            except Exception as e:
+                _logger.error('Error obteniendo dashboards para hub: %s', str(e))
+                return [('error', f'❌ Error: {str(e)[:50]}...')]
+        
         except Exception as e:
-            _logger.error('Error obteniendo dashboards para hub: %s', str(e))
+            _logger.error('Error en _get_dashboard_selection: %s', str(e))
             return [('error', f'❌ Error: {str(e)[:50]}...')]
 
     def _get_superset_config(self):

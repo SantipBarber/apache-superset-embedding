@@ -171,17 +171,42 @@ class ResConfigSettings(models.TransientModel):
     def open_superset_dashboards(self):
         """Abrir lista de dashboards de Superset"""
         self.ensure_one()
-       
+    
         try:
-            # Llamar endpoint para obtener dashboards
-            dashboards_response = self.env['ir.http']._dispatch('/superset/dashboards')
-           
-            if not dashboards_response.get('success'):
-                raise UserError(_(f"Error obteniendo dashboards: {dashboards_response.get('error', 'Error desconocido')}"))
-           
-            dashboards = dashboards_response.get('dashboards', [])
-           
-            if not dashboards:
+            # Usar directamente el método de superset_utils en lugar de endpoint
+            utils = self.env['superset.utils']
+            config = utils.get_superset_config()
+            
+            # Validar configuración
+            utils.validate_config(config)
+            
+            # Obtener token de acceso
+            access_token = utils.get_access_token(config)
+            
+            # Obtener dashboards usando directamente requests
+            import requests
+            dashboards_url = f"{config['url']}/api/v1/dashboard/"
+            params = {'q': '(page:0,page_size:100)'}
+            
+            response = requests.get(
+                dashboards_url,
+                params=params,
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=config.get('timeout', 30)
+            )
+            
+            if response.status_code != 200:
+                raise UserError(_('Error obteniendo dashboards: HTTP %s') % response.status_code)
+                
+            data = response.json()
+            dashboards = data.get('result', [])
+            
+            # Filtrar solo dashboards publicados
+            published_dashboards = [d for d in dashboards if d.get('published')]
+            
+            _logger.info('Dashboards encontrados: %s', len(published_dashboards))
+            
+            if not published_dashboards:
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
@@ -191,31 +216,56 @@ class ResConfigSettings(models.TransientModel):
                         'type': 'warning',
                     }
                 }
-           
-            # Mostrar lista en una ventana
+            
+            # Verificar cuáles tienen embedding habilitado
+            embedding_count = 0
             message_lines = ['Dashboards encontrados:', '']
-           
-            for dashboard in dashboards[:10]:  # Mostrar solo los primeros 10
-                embedding_status = "✅" if dashboard.get('embedding_enabled') else "❌"
-                message_lines.append(f"{embedding_status} {dashboard.get('title', 'Sin título')}")
-           
-            if len(dashboards) > 10:
-                message_lines.append(f'... y {len(dashboards) - 10} más')
-           
+            
+            for dashboard in published_dashboards[:10]:  # Mostrar solo los primeros 10
+                # Verificar si tiene embedding habilitado
+                try:
+                    embedding_url = f"{config['url']}/api/v1/dashboard/{dashboard.get('id')}/embedded"
+                    embedding_response = requests.get(
+                        embedding_url,
+                        headers={'Authorization': f'Bearer {access_token}'},
+                        timeout=config.get('timeout', 30)
+                    )
+                    
+                    has_embedding = (embedding_response.status_code == 200 and 
+                                embedding_response.json().get('result', {}).get('uuid'))
+                    
+                    if has_embedding:
+                        embedding_count += 1
+                        embedding_status = "✅"
+                    else:
+                        embedding_status = "❌"
+                        
+                except Exception:
+                    embedding_status = "❓"  # Error verificando embedding
+                
+                title = dashboard.get('dashboard_title', 'Sin título')
+                message_lines.append(f"{embedding_status} {title}")
+            
+            if len(published_dashboards) > 10:
+                message_lines.append(f'... y {len(published_dashboards) - 10} más')
+                
+            message_lines.extend(['', f'Con embedding habilitado: {embedding_count}'])
+            
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': _(f'📊 {len(dashboards)} Dashboards Encontrados'),
+                    'title': _('📊 %s Dashboards Encontrados') % len(published_dashboards),
                     'message': '\n'.join(message_lines),
                     'type': 'info',
                     'sticky': True,
                 }
             }
-           
+        
         except Exception as e:
             _logger.error('Error abriendo dashboards: %s', str(e))
-            raise UserError(_(f'Error: {str(e)}'))
+            # Quitar la f-string que causa problemas con _()
+            raise UserError(_('Error: %s') % str(e))
 
     def clear_superset_cache(self):
         """Limpiar cache de tokens usando utilidades centralizadas"""
