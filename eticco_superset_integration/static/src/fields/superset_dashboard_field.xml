@@ -5,7 +5,7 @@
             
             <div class="superset_selector_section mb-3">
                 <div class="row align-items-center">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold">
                             <i class="fa fa-dashboard me-2"></i>
                             Seleccionar Dashboard
@@ -13,7 +13,7 @@
                         <select class="form-select" 
                                 t-att-name="props.name"
                                 t-att-value="currentDashboardId"
-                                t-on-change="onDashboardSelectionChange">
+                                t-on-change="currentDashboardId">  <!-- ← Solo t-model, sin t-on-change -->
                             <option value="">-- Selecciona un dashboard --</option>
                             <t t-foreach="getDashboardOptions()" t-as="option" t-key="option[0]">
                                 <option t-att-value="option[0]" 
@@ -23,12 +23,21 @@
                             </t>
                         </select>
                     </div>
-                    <div class="col-md-6">
-                        <div t-if="currentDashboardId and !['no_config', 'no_dashboards', 'error'].includes(currentDashboardId)" 
-                             class="badge bg-success mt-4">
-                            <i class="fa fa-check-circle me-1"></i>
-                            Dashboard seleccionado
-                        </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary mt-4" 
+                                t-on-click="loadSelectedDashboard"
+                                t-att-disabled="!currentDashboardId or ['no_config', 'no_dashboards', 'error'].includes(currentDashboardId)">
+                            <i class="fa fa-play me-1"></i>
+                            Cargar Dashboard
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-secondary mt-4" 
+                                t-on-click="reloadCurrentDashboard"
+                                t-att-disabled="!props.record.data.dashboard_loaded">
+                            <i class="fa fa-refresh me-1"></i>
+                            Actualizar
+                        </button>
                     </div>
                 </div>
             </div>

@@ -24,6 +24,12 @@ export class SupersetDashboard extends Component {
         onMounted(this.onMounted.bind(this));
         onPatched(this.onPatched.bind(this));
         onWillUnmount(this.onWillUnmount.bind(this));
+        this.env.bus.addEventListener('dashboard-selection-changed', this.onDashboardSelectionEvent.bind(this));   
+     }
+
+     async onDashboardSelectionEvent(event) {
+        const { dashboardId } = event.detail;
+        await this.loadDashboard(dashboardId);
     }
 
     async onWillStart() {
