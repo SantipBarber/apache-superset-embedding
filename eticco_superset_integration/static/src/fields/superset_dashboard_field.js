@@ -46,6 +46,11 @@ export class SupersetDashboardField extends Component {
         await this.props.record.save();
         
         if (newValue && !['no_config', 'no_dashboards', 'error'].includes(newValue)) {
+            const dashboardComponent = this.el.querySelector('superset-dashboard');
+            if (dashboardComponent && dashboardComponent.__owl__) {
+                await dashboardComponent.__owl__.component.loadDashboard();
+            }
+            
             this.notification.add(
                 _t('Cargando dashboard...'),
                 { type: 'info' }

@@ -42,12 +42,7 @@ export class SupersetDashboard extends Component {
         
         if (currentId !== this.state.lastDashboardId) {
             this.state.lastDashboardId = currentId;
-            
-            if (currentId && !['no_config', 'no_dashboards', 'error'].includes(currentId)) {
-                this.loadDashboard(currentId);
-            } else {
-                this.clearDashboard();
-            }
+            this.clearDashboard();
         }
     }
 
