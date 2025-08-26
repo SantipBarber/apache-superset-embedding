@@ -31,10 +31,8 @@
                     
                     <div invisible="not has_configuration or available_dashboards_count == 0">
                         <field name="selected_dashboard" 
-                               widget="superset_dashboard_field" 
-                               height="700px" 
-                               autoLoad="true"
-                               showInfo="true"
+                               widget="superset_dashboard_integrated" 
+                               height="700px"
                                nolabel="1"
                                options="{'no_create': True, 'no_edit': True}"/>
                     </div>

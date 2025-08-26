@@ -52,11 +52,9 @@
     
     'assets': {
         'web.assets_backend': [
-            'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.js',
-            'eticco_superset_integration/static/src/fields/superset_dashboard_field.js',
-            'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.xml',
-            'eticco_superset_integration/static/src/fields/superset_dashboard_field.xml',
-            'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.scss',
+            # Componente integrado con UX mejorada
+            'eticco_superset_integration/static/src/fields/superset_dashboard_integrated.js',
+            'eticco_superset_integration/static/src/fields/superset_dashboard_integrated.xml',
         ],
     },
     

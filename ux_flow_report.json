@@ -1,0 +1,202 @@
+{
+  "timestamp": "2025-08-26T17:21:58.981431",
+  "total_steps": 14,
+  "user_journey": [
+    {
+      "step": "Acceso Inicial",
+      "description": "Usuario hace clic en men\u00fa 'Analytics'",
+      "timestamp": "2025-08-26T17:21:57.957237",
+      "duration_ms": 0,
+      "state": {
+        "selected_dashboard": "",
+        "loading": false,
+        "error": null,
+        "embedded": false,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Vista Cargada",
+      "description": "Formulario Analytics se muestra con selector de dashboard",
+      "timestamp": "2025-08-26T17:21:58.062380",
+      "duration_ms": 100,
+      "state": {
+        "selected_dashboard": "",
+        "loading": false,
+        "error": null,
+        "embedded": false,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Opciones Mostradas",
+      "description": "Usuario ve 3 dashboards disponibles",
+      "timestamp": "2025-08-26T17:21:58.062437",
+      "duration_ms": 50,
+      "state": {
+        "selected_dashboard": "",
+        "loading": false,
+        "error": null,
+        "embedded": false,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Selecci\u00f3n de Dashboard",
+      "description": "Usuario selecciona '\ud83d\udcc8 Sales Analytics Dashboard'",
+      "timestamp": "2025-08-26T17:21:58.062449",
+      "duration_ms": 10,
+      "state": {
+        "selected_dashboard": "1",
+        "loading": false,
+        "error": null,
+        "embedded": false,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Auto-detecci\u00f3n",
+      "description": "Sistema detecta cambio autom\u00e1ticamente (onPatched)",
+      "timestamp": "2025-08-26T17:21:58.062452",
+      "duration_ms": 5,
+      "state": {
+        "selected_dashboard": "1",
+        "loading": true,
+        "error": null,
+        "embedded": false,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Carga de Datos",
+      "description": "Sistema obtiene datos del dashboard v\u00eda RPC",
+      "timestamp": "2025-08-26T17:21:58.267532",
+      "duration_ms": 205,
+      "state": {
+        "selected_dashboard": "1",
+        "loading": true,
+        "error": null,
+        "embedded": false,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Embedding Completado",
+      "description": "Dashboard se embebe y muestra completamente",
+      "timestamp": "2025-08-26T17:21:58.572635",
+      "duration_ms": 305,
+      "state": {
+        "selected_dashboard": "1",
+        "loading": false,
+        "error": null,
+        "embedded": true,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Interacci\u00f3n Activa",
+      "description": "Usuario comienza a interactuar con el dashboard",
+      "timestamp": "2025-08-26T17:21:58.572674",
+      "duration_ms": 0,
+      "state": {
+        "selected_dashboard": "1",
+        "loading": false,
+        "error": null,
+        "embedded": true,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Cambio de Dashboard",
+      "description": "Usuario selecciona diferente dashboard",
+      "timestamp": "2025-08-26T17:21:58.572718",
+      "duration_ms": 10,
+      "state": {
+        "selected_dashboard": "2",
+        "loading": true,
+        "error": null,
+        "embedded": false,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Limpieza Autom\u00e1tica",
+      "description": "Sistema limpia dashboard anterior (clearDashboard)",
+      "timestamp": "2025-08-26T17:21:58.572727",
+      "duration_ms": 20,
+      "state": {
+        "selected_dashboard": "2",
+        "loading": true,
+        "error": null,
+        "embedded": false,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Nuevo Dashboard Activo",
+      "description": "Nuevo dashboard se carga autom\u00e1ticamente",
+      "timestamp": "2025-08-26T17:21:58.826908",
+      "duration_ms": 254,
+      "state": {
+        "selected_dashboard": "2",
+        "loading": false,
+        "error": null,
+        "embedded": true,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Selecci\u00f3n Problem\u00e1tica",
+      "description": "Usuario selecciona dashboard con problemas",
+      "timestamp": "2025-08-26T17:21:58.826985",
+      "duration_ms": 10,
+      "state": {
+        "selected_dashboard": "error_dashboard",
+        "loading": true,
+        "error": null,
+        "embedded": true,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Error Detectado",
+      "description": "Sistema detecta error y muestra mensaje claro",
+      "timestamp": "2025-08-26T17:21:58.981331",
+      "duration_ms": 150,
+      "state": {
+        "selected_dashboard": "error_dashboard",
+        "loading": false,
+        "error": "Dashboard no tiene embedding habilitado",
+        "embedded": false,
+        "last_action_time": null
+      }
+    },
+    {
+      "step": "Recuperaci\u00f3n F\u00e1cil",
+      "description": "Usuario puede seleccionar otro dashboard sin complicaciones",
+      "timestamp": "2025-08-26T17:21:58.981379",
+      "duration_ms": 0,
+      "state": {
+        "selected_dashboard": "error_dashboard",
+        "loading": false,
+        "error": "Dashboard no tiene embedding habilitado",
+        "embedded": false,
+        "last_action_time": null
+      }
+    }
+  ],
+  "ux_metrics": {
+    "total_interactions": 7,
+    "automatic_actions": 4,
+    "average_step_duration": 79.92857142857143
+  },
+  "improvements_achieved": {
+    "\ud83c\udfaf Un solo paso": "Seleccionar \u2192 Ver (eliminado bot\u00f3n intermedio)",
+    "\u26a1 Auto-carga": "Sistema detecta cambios autom\u00e1ticamente",
+    "\ud83d\udd04 Cambio fluido": "Cambiar dashboard es instant\u00e1neo",
+    "\ud83d\udcf1 Estados claros": "Usuario siempre sabe qu\u00e9 est\u00e1 pasando",
+    "\ud83d\udee1\ufe0f Manejo robusto": "Errores se muestran claramente",
+    "\ud83c\udfa8 UI moderna": "Interfaz limpia y profesional",
+    "\u23f1\ufe0f Tiempo reducido": "Menos clicks = menos tiempo de tarea"
+  }
+}
