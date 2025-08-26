@@ -42,6 +42,8 @@ export class SupersetDashboardField extends Component {
         await this.props.record.update({
             [this.props.name]: newValue
         });
+
+        await this.props.record.save();
         
         if (newValue && !['no_config', 'no_dashboards', 'error'].includes(newValue)) {
             this.notification.add(

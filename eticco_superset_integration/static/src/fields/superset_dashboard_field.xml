@@ -12,7 +12,7 @@
                         </label>
                         <select class="form-select" 
                                 t-att-name="props.name"
-                                t-model="currentDashboardId"
+                                t-att-value="currentDashboardId"
                                 t-on-change="onDashboardSelectionChange">
                             <option value="">-- Selecciona un dashboard --</option>
                             <t t-foreach="getDashboardOptions()" t-as="option" t-key="option[0]">
@@ -24,7 +24,7 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <div t-if="currentDashboardId and currentDashboardId not in ['no_config', 'no_dashboards', 'error']" 
+                        <div t-if="currentDashboardId and !['no_config', 'no_dashboards', 'error'].includes(currentDashboardId)" 
                              class="badge bg-success mt-4">
                             <i class="fa fa-check-circle me-1"></i>
                             Dashboard seleccionado
@@ -33,7 +33,7 @@
                 </div>
             </div>
 
-            <div t-if="currentDashboardId and currentDashboardId not in ['no_config', 'no_dashboards', 'error']">
+            <div t-if="currentDashboardId and !['no_config', 'no_dashboards', 'error'].includes(currentDashboardId)">
                 <SupersetDashboard 
                     dashboardId="currentDashboardId"
                     modelName="props.record.resModel"
@@ -46,7 +46,7 @@
                 />
             </div>
             
-            <div t-elif="!currentDashboardId or currentDashboardId in ['no_config', 'no_dashboards', 'error']" 
+            <div t-elif="!currentDashboardId or ['no_config', 'no_dashboards', 'error'].includes(currentDashboardId)" 
                  class="superset_placeholder text-center py-5">
                 <i class="fa fa-arrow-up fa-3x text-muted mb-3"></i>
                 <h5 class="text-muted">Selecciona un dashboard</h5>

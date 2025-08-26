@@ -359,49 +359,65 @@ class SupersetAnalyticsHub(models.Model):
         """Obtener datos del dashboard para JavaScript/OWL"""
         self.ensure_one()
         
-        # Si no hay dashboard seleccionado, devolver error
         if not self.selected_dashboard or self.selected_dashboard in ['no_config', 'no_dashboards', 'error']:
             return {'error': 'No hay dashboard seleccionado'}
             
         try:
-            # Actualizar información del dashboard automáticamente
             self._compute_dashboard_info()
             
             utils = self.env['superset.utils']
-            config = self._get_superset_config()
-            
-            # Validar configuración
+            config = utils.get_superset_config()
             utils.validate_config(config)
             
-            # Validar datos del dashboard
-            dashboard_data = {
-                'id': self.current_dashboard_id,
-                'uuid': self.selected_dashboard,
-                'title': self.current_dashboard_title,
-                'embedding_enabled': bool(self.current_embedding_uuid),
-                'embedding_uuid': self.current_embedding_uuid
+            if not all([self.current_dashboard_id, self.selected_dashboard, self.current_embedding_uuid]):
+                return {'error': 'Datos de dashboard incompletos'}
+            
+            access_token = utils.get_access_token(config)
+            
+            guest_token_url = f"{config['url']}/api/v1/security/guest_token/"
+            guest_data = {
+                'user': {
+                    'username': 'guest_user',
+                    'first_name': 'Guest',
+                    'last_name': 'User'
+                },
+                'resources': [{
+                    'type': 'dashboard',
+                    'id': self.current_embedding_uuid
+                }],
+                'rls': []
             }
             
-            utils.validate_embedding_requirements(dashboard_data)
+            response = requests.post(
+                guest_token_url,
+                json=guest_data,
+                headers={
+                    'Authorization': f'Bearer {access_token}',
+                    'Content-Type': 'application/json'
+                },
+                timeout=config.get('timeout', 30)
+            )
             
-            # Generar datos para embedding
-            viewer = self.env['superset.dashboard.viewer'].create({
-                'dashboard_uuid': self.selected_dashboard,
-                'dashboard_id': self.current_dashboard_id,
-                'embedding_uuid': self.current_embedding_uuid
-            })
+            if response.status_code != 200:
+                error_data = response.json() if response.content else {}
+                return {'error': f'Error generando guest token: {error_data}'}
             
-            embedding_data = viewer.get_embedding_data()
-            utils.log_debug('Datos de embedding generados', embedding_data)
+            guest_token = response.json().get('token')
             
-            # Marcar como cargado
+            if not guest_token:
+                return {'error': 'No se pudo obtener guest token'}
+            
             self.dashboard_loaded = True
             
-            return embedding_data
+            return {
+                'embedding_uuid': self.current_embedding_uuid,
+                'guest_token': guest_token,
+                'superset_domain': config['url'],
+                'dashboard_title': self.current_dashboard_title,
+                'dashboard_id': self.current_dashboard_id,
+                'debug_mode': config.get('debug_mode', False)
+            }
             
-        except (ValidationError, UserError) as e:
-            _logger.error('Error validación obteniendo datos JS: %s', str(e))
-            return {'error': str(e)}
         except Exception as e:
             _logger.error('Error inesperado obteniendo datos para JS: %s', str(e))
             return {'error': f'Error inesperado: {str(e)}'}

@@ -123,20 +123,29 @@ export class SupersetDashboard extends Component {
 
     async embedDashboard(data) {
         if (!window.supersetEmbeddedSdk) {
-            throw new Error(_t('SDK de Superset no disponible'));
+            throw new Error('SDK de Superset no disponible');
         }
-
+    
         if (!data.embedding_uuid) {
-            throw new Error(_t('Dashboard no tiene embedding habilitado'));
+            throw new Error('Dashboard no tiene embedding habilitado');
         }
-
-        const container = this.dashboardRef.el;
+    
+        let container = this.dashboardRef.el;
+        
         if (!container) {
-            throw new Error(_t('Contenedor del dashboard no disponible'));
+            container = document.querySelector('#superset-container, .superset_dashboard_embed, [t-ref="dashboardContainer"]');
         }
-
+        
+        if (!container) {
+            console.error('dashboardRef:', this.dashboardRef);
+            console.error('Buscando contenedores disponibles...');
+            const allContainers = document.querySelectorAll('div[class*="dashboard"], div[id*="superset"]');
+            console.error('Contenedores encontrados:', allContainers);
+            throw new Error('Contenedor del dashboard no disponible');
+        }
+    
         container.innerHTML = '';
-
+    
         try {
             const config = {
                 id: data.embedding_uuid,
@@ -145,19 +154,20 @@ export class SupersetDashboard extends Component {
                 fetchGuestToken: () => data.guest_token,
                 debug: data.debug_mode || false
             };
-
+    
+            console.log('Embedding config:', config);
             await window.supersetEmbeddedSdk.embedDashboard(config);
             
             this.state.isEmbedded = true;
-
+    
             this.notification.add(
-                _t('Dashboard cargado: ') + data.dashboard_title,
+                'Dashboard cargado: ' + data.dashboard_title,
                 { type: 'success' }
             );
-
+    
         } catch (error) {
             console.error('Error en embedding:', error);
-            throw new Error(_t('Error embebiendo dashboard: ') + error.message);
+            throw new Error('Error embebiendo dashboard: ' + error.message);
         }
     }
 
