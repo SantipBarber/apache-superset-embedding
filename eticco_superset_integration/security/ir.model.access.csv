@@ -1,6 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_superset_config_settings_user,superset.config.settings.user,model_res_config_settings,eticco_superset_integration.group_superset_user,1,0,0,0
 access_superset_config_settings_manager,superset.config.settings.manager,model_res_config_settings,eticco_superset_integration.group_superset_manager,1,1,1,1
-access_superset_dashboard_selector_user,superset.dashboard.selector.user,model_superset_dashboard_selector,eticco_superset_integration.group_superset_user,1,1,1,1
-access_superset_dashboard_viewer_user,superset.dashboard.viewer.user,model_superset_dashboard_viewer,eticco_superset_integration.group_superset_user,1,1,1,1
 access_superset_analytics_hub_user,superset.analytics.hub.user,model_superset_analytics_hub,eticco_superset_integration.group_superset_user,1,1,1,1
