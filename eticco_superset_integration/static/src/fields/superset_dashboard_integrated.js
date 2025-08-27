@@ -33,11 +33,13 @@ export class SupersetDashboardIntegrated extends Component {
 
     async onWillStart() {
         await this.loadSupersetSDK();
-        await this.verifyConfigurationAndRefreshOptions();
     }
 
-    onMounted() {
-        // Auto-cargar si hay un dashboard seleccionado y válido después de la verificación inicial
+    async onMounted() {
+        // Verificar configuración y auto-seleccionar después del montaje
+        await this.initializeConfiguration();
+        
+        // Auto-cargar si hay un dashboard válido seleccionado
         if (this.currentDashboardId && this.isDashboardValid(this.currentDashboardId)) {
             this.loadDashboard();
         }
@@ -248,21 +250,27 @@ export class SupersetDashboardIntegrated extends Component {
         return _t('Dashboard listo');
     }
 
-    async verifyConfigurationAndRefreshOptions() {
+    async initializeConfiguration() {
         try {
-            // Usar el nuevo método público para refrescar opciones
-            await this.rpc('/web/dataset/call_kw', {
-                model: this.props.record.resModel,
-                method: 'refresh_dashboard_options',
-                args: [this.props.record.resId],
-                kwargs: {}
-            });
+            const hasValidSelection = this.currentDashboardId && this.isDashboardValid(this.currentDashboardId);
+            
+            // Si no hay selección válida, intentar obtener opciones actualizadas
+            if (!hasValidSelection) {
+                const result = await this.rpc('/web/dataset/call_kw', {
+                    model: this.props.record.resModel,
+                    method: 'refresh_dashboard_options',
+                    args: [this.props.record.resId],
+                    kwargs: {}
+                });
 
-            // Refrescar el record para obtener las opciones y selección actualizadas
-            await this.props.record.load();
+                // Refrescar el record para obtener las opciones actualizadas
+                if (result.options_refreshed) {
+                    await this.props.record.load();
+                }
+            }
 
         } catch (error) {
-            console.error('Error verificando configuración inicial:', error);
+            console.error('Error inicializando configuración:', error);
             // No mostrar error al usuario, solo en consola para debug
         }
     }

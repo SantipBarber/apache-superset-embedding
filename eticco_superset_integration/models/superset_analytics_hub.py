@@ -467,18 +467,13 @@ class SupersetAnalyticsHub(models.Model):
         """Refrescar opciones de dashboard (método público para llamadas desde JS)"""
         self.ensure_one()
         
-        # Forzar la re-evaluación de las opciones de dashboard
+        # Solo forzar la re-evaluación de las opciones de dashboard
+        # No auto-seleccionar automáticamente, dejar que el usuario elija
         options = self._get_dashboard_selection()
         
-        # Si hay opciones válidas y no hay dashboard seleccionado, seleccionar el primero
-        if options and not self.selected_dashboard:
-            valid_options = [opt for opt in options if opt[0] not in ['no_config', 'no_dashboards', 'error']]
-            if valid_options:
-                self.selected_dashboard = valid_options[0][0]
-        
         return {
-            'type': 'ir.actions.client',
-            'tag': 'reload',
+            'options_refreshed': True,
+            'available_options': len([opt for opt in options if opt[0] not in ['no_config', 'no_dashboards', 'error']])
         }
     
     @api.model
