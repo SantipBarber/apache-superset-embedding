@@ -33,10 +33,11 @@ export class SupersetDashboardIntegrated extends Component {
 
     async onWillStart() {
         await this.loadSupersetSDK();
+        await this.verifyConfigurationAndRefreshOptions();
     }
 
     onMounted() {
-        // Auto-cargar si hay un dashboard seleccionado
+        // Auto-cargar si hay un dashboard seleccionado y válido después de la verificación inicial
         if (this.currentDashboardId && this.isDashboardValid(this.currentDashboardId)) {
             this.loadDashboard();
         }
@@ -245,6 +246,25 @@ export class SupersetDashboardIntegrated extends Component {
             return _t('Dashboard no válido');
         }
         return _t('Dashboard listo');
+    }
+
+    async verifyConfigurationAndRefreshOptions() {
+        try {
+            // Usar el nuevo método público para refrescar opciones
+            await this.rpc('/web/dataset/call_kw', {
+                model: this.props.record.resModel,
+                method: 'refresh_dashboard_options',
+                args: [this.props.record.resId],
+                kwargs: {}
+            });
+
+            // Refrescar el record para obtener las opciones y selección actualizadas
+            await this.props.record.load();
+
+        } catch (error) {
+            console.error('Error verificando configuración inicial:', error);
+            // No mostrar error al usuario, solo en consola para debug
+        }
     }
 }
 

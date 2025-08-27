@@ -463,6 +463,24 @@ class SupersetAnalyticsHub(models.Model):
             _logger.error('Error inesperado obteniendo datos para JS: %s', str(e))
             return {'error': f'Error inesperado: {str(e)}'}
 
+    def refresh_dashboard_options(self):
+        """Refrescar opciones de dashboard (método público para llamadas desde JS)"""
+        self.ensure_one()
+        
+        # Forzar la re-evaluación de las opciones de dashboard
+        options = self._get_dashboard_selection()
+        
+        # Si hay opciones válidas y no hay dashboard seleccionado, seleccionar el primero
+        if options and not self.selected_dashboard:
+            valid_options = [opt for opt in options if opt[0] not in ['no_config', 'no_dashboards', 'error']]
+            if valid_options:
+                self.selected_dashboard = valid_options[0][0]
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
+    
     @api.model
     def get_default_hub(self):
         """Obtener o crear hub por defecto"""
