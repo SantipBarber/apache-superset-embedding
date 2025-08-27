@@ -365,3 +365,21 @@ class ResConfigSettings(models.TransientModel):
         for record in self:
             if record.superset_timeout and (record.superset_timeout < 5 or record.superset_timeout > 300):
                 raise ValidationError(_('El timeout debe estar entre 5 y 300 segundos'))
+
+    def write(self, vals):
+        """Interceptar guardado de configuración para refrescar hub"""
+        result = super().write(vals)
+        
+        # Si se modificó algún campo de configuración de Superset, refrescar hub
+        superset_fields = ['superset_url', 'superset_username', 'superset_password', 'superset_timeout']
+        if any(field in vals for field in superset_fields):
+            # Buscar hub y forzar recálculo
+            hub = self.env['superset.analytics.hub'].search([], limit=1)
+            if hub:
+                try:
+                    hub.force_refresh_configuration()
+                    _logger.info('Hub refrescado después de cambiar configuración')
+                except Exception as e:
+                    _logger.error('Error refrescando hub: %s', str(e))
+        
+        return result

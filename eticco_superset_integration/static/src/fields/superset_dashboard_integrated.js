@@ -252,20 +252,24 @@ export class SupersetDashboardIntegrated extends Component {
 
     async initializeConfiguration() {
         try {
-            const hasValidSelection = this.currentDashboardId && this.isDashboardValid(this.currentDashboardId);
-            
-            // Si no hay selección válida, intentar obtener opciones actualizadas
-            if (!hasValidSelection) {
-                const result = await this.rpc('/web/dataset/call_kw', {
-                    model: this.props.record.resModel,
-                    method: 'refresh_dashboard_options',
-                    args: [this.props.record.resId],
-                    kwargs: {}
-                });
+            // Siempre verificar el estado actual de la configuración
+            const result = await this.rpc('/web/dataset/call_kw', {
+                model: this.props.record.resModel,
+                method: 'refresh_dashboard_options',
+                args: [this.props.record.resId],
+                kwargs: {}
+            });
 
-                // Refrescar el record para obtener las opciones actualizadas
-                if (result.options_refreshed) {
-                    await this.props.record.load();
+            // Refrescar el record para obtener las opciones actualizadas
+            if (result.options_refreshed) {
+                await this.props.record.load();
+                
+                // Si se detectó configuración válida, mostrar notificación
+                if (result.has_configuration && result.available_options > 0) {
+                    this.notification.add(
+                        `✅ ${result.available_options} dashboard(s) disponible(s)`,
+                        { type: 'success' }
+                    );
                 }
             }
 

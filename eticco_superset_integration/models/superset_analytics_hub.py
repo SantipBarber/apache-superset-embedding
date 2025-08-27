@@ -129,7 +129,6 @@ class SupersetAnalyticsHub(models.Model):
         self.current_embedding_uuid = False
         self.current_dashboard_info = ''
 
-    @api.depends()
     def _compute_system_status(self):
         """Computar estado del sistema"""
         for record in self:
@@ -339,8 +338,12 @@ class SupersetAnalyticsHub(models.Model):
             'name': 'Configuración Superset',
             'res_model': 'res.config.settings',
             'view_mode': 'form',
-            'target': 'current',
-            'context': {'module': 'eticco_superset_integration'}
+            'target': 'new',  # Cambiar a 'new' para abrir en modal
+            'context': {
+                'module': 'eticco_superset_integration',
+                'default_module': 'eticco_superset_integration',
+                'hub_id': self.id  # Pasar ID del hub para refrescar después
+            }
         }
 
     def get_embedding_url(self):
@@ -467,13 +470,35 @@ class SupersetAnalyticsHub(models.Model):
         """Refrescar opciones de dashboard (método público para llamadas desde JS)"""
         self.ensure_one()
         
-        # Solo forzar la re-evaluación de las opciones de dashboard
-        # No auto-seleccionar automáticamente, dejar que el usuario elija
+        # Forzar recálculo de campos computados
+        self._compute_system_status()
+        
+        # Forzar la re-evaluación de las opciones de dashboard
         options = self._get_dashboard_selection()
+        valid_count = len([opt for opt in options if opt[0] not in ['no_config', 'no_dashboards', 'error']])
         
         return {
             'options_refreshed': True,
-            'available_options': len([opt for opt in options if opt[0] not in ['no_config', 'no_dashboards', 'error']])
+            'available_options': valid_count,
+            'has_configuration': self.has_configuration,
+            'configuration_status': 'configured' if self.has_configuration else 'missing'
+        }
+
+    def force_refresh_configuration(self):
+        """Método público para forzar recálculo desde configuración"""
+        self.ensure_one()
+        
+        # Limpiar selección actual si hay error de configuración
+        self._compute_system_status()
+        
+        if not self.has_configuration:
+            self.selected_dashboard = False
+            self.dashboard_loaded = False
+            self._reset_dashboard_info()
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
         }
     
     @api.model
