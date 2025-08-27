@@ -3,55 +3,47 @@
     <t t-name="eticco_superset_integration.SupersetDashboardIntegratedTemplate">
         <div class="o_field_superset_dashboard_integrated w-100" t-att-class="props.class" style="width: 100%;">
 
-            <!-- Selector de Dashboard Optimizado -->
-            <div class="superset_selector w-100 bg-light p-3 border rounded mb-3" style="width: 100%; max-width: 100%;">
-                <div class="row align-items-center">
-                    <div class="col-12">
-                        <label class="form-label fw-bold mb-2">
-                            <i class="fa fa-dashboard me-2"></i>
-                            Seleccionar Dashboard
+            <!-- Selector de Dashboard Compacto -->
+            <div class="superset_selector w-100 bg-light p-2 border rounded mb-2" style="width: 100%; max-width: 100%;">
+                <div class="row align-items-center g-2">
+                    <div class="col-auto">
+                        <label class="form-label fw-bold mb-0">
+                            <i class="fa fa-dashboard me-1"></i>
+                            Dashboard:
                         </label>
-                        <div class="row align-items-center w-100">
-                            <div class="col-10">
-                                <select class="form-select form-select-lg w-100" t-att-name="props.name" t-att-value="currentDashboardId" t-on-change="onDashboardSelectionChange" style="width: 100%;">
-                                    <option value="">-- Selecciona un dashboard --</option>
-                                    <t t-foreach="getDashboardOptions()" t-as="option" t-key="option[0]">
-                                        <option t-att-value="option[0]" t-esc="option[1]">
-                                        </option>
-                                    </t>
-                                </select>
-                            </div>
-                            <div class="d-flex flex-column align-items-end">
-                                <!-- Estado del Dashboard -->
-                                <div class="mb-2">
-                                    <span t-if="state.isLoading" class="badge bg-primary fs-6">
-                                        <i class="fa fa-spinner fa-spin me-1"></i>
-                                    Cargando...
-                                    </span>
-                                    <span t-elif="state.error" class="badge bg-danger fs-6">
-                                        <i class="fa fa-exclamation-triangle me-1"></i>
-                                    Error
-                                    </span>
-                                    <span t-elif="isCurrentDashboardLoaded" class="badge bg-success fs-6">
-                                        <i class="fa fa-check-circle me-1"></i>
-                                    Dashboard Activo
-                                    </span>
-                                    <span t-elif="isDashboardValid(currentDashboardId)" class="badge bg-warning fs-6">
-                                        <i class="fa fa-clock-o me-1"></i>
-                                    Cargando automáticamente...
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-                </div>
-
-                <!-- Mensaje de Estado -->
-                <div class="mt-2">
-                    <small class="text-muted">
-                        <i class="fa fa-info-circle me-1"></i>
-                        <span t-esc="getLoadingMessage()"/>
-                    </small>
+                    <div class="col">
+                        <select class="form-select w-100" t-att-name="props.name" t-att-value="currentDashboardId" t-on-change="onDashboardSelectionChange" style="width: 100%;">
+                            <option value="">-- Selecciona un dashboard --</option>
+                            <t t-foreach="getDashboardOptions()" t-as="option" t-key="option[0]">
+                                <option t-att-value="option[0]" t-esc="option[1]">
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <!-- Estado del Dashboard alineado -->
+                        <span t-if="state.isLoading" class="badge bg-primary">
+                            <i class="fa fa-spinner fa-spin me-1"></i>
+                            Cargando...
+                        </span>
+                        <span t-elif="state.error" class="badge bg-danger">
+                            <i class="fa fa-exclamation-triangle me-1"></i>
+                            Error
+                        </span>
+                        <span t-elif="isCurrentDashboardLoaded" class="badge bg-success">
+                            <i class="fa fa-check-circle me-1"></i>
+                            Activo
+                        </span>
+                        <span t-elif="isDashboardValid(currentDashboardId)" class="badge bg-warning">
+                            <i class="fa fa-clock-o me-1"></i>
+                            Cargando...
+                        </span>
+                        <small t-else="" class="text-muted">
+                            <i class="fa fa-info-circle me-1"></i>
+                            <span t-esc="getLoadingMessage()"/>
+                        </small>
+                    </div>
                 </div>
             </div>
 

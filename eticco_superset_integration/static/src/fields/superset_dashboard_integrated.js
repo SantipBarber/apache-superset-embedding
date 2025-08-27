@@ -43,13 +43,6 @@ export class SupersetDashboardIntegrated extends Component {
     }
 
     onPatched() {
-        // TEMPORALMENTE DESHABILITADO PARA EVITAR BUCLES
-        console.log('🔄 onPatched ejecutado (DESHABILITADO):', {
-            currentDashboardId: this.currentDashboardId,
-            lastLoadedId: this.state.lastLoadedId,
-            isLoading: this.state.isLoading
-        });
-        
         // NO AUTO-CARGAR desde onPatched para evitar bucles infinitos
         // La carga se hará directamente desde onDashboardSelectionChange
     }
@@ -86,37 +79,23 @@ export class SupersetDashboardIntegrated extends Component {
 
     async onDashboardSelectionChange(event) {
         const newValue = event.target.value;
-        console.log('📊 Dashboard seleccionado (con auto-carga):', {
-            newValue,
-            oldValue: this.currentDashboardId,
-            lastLoadedId: this.state.lastLoadedId
-        });
         
         // Actualizar el record
-        console.log('📝 Actualizando record...');
         await this.props.record.update({
             [this.props.name]: newValue
         });
 
         // Limpiar dashboard anterior inmediatamente
         if (newValue !== this.state.lastLoadedId) {
-            console.log('🧹 Limpiando dashboard anterior');
             this.clearDashboard();
         }
 
         // Guardar cambios
-        console.log('💾 Guardando cambios...');
         await this.props.record.save();
 
         // 🚀 CARGA DIRECTA INMEDIATA (sin esperar onPatched)
         if (this.isDashboardValid(newValue) && !this.state.isLoading) {
-            console.log('🚀 Iniciando carga DIRECTA después de selección');
             await this.loadDashboard();
-        } else {
-            console.log('⏸️ No se carga directamente:', {
-                isValid: this.isDashboardValid(newValue),
-                isLoading: this.state.isLoading
-            });
         }
     }
 
@@ -139,35 +118,18 @@ export class SupersetDashboardIntegrated extends Component {
     }
 
     async loadDashboard() {
-        console.log('📍 loadDashboard iniciado:', {
-            isLoading: this.state.isLoading,
-            currentDashboardId: this.currentDashboardId,
-            recordResId: this.props.record.resId,
-            recordResModel: this.props.record.resModel
-        });
-        
         if (this.state.isLoading) {
-            console.warn('⚠️ Ya hay una carga en progreso, ignorando...');
             return;
         }
 
         if (!this.isDashboardValid(this.currentDashboardId)) {
-            console.warn('⚠️ Dashboard ID no válido:', this.currentDashboardId);
             return;
         }
 
         this.state.isLoading = true;
         this.state.error = null;
 
-        try {
-            console.log('🚀 Cargando dashboard automáticamente:', this.currentDashboardId);
-            
-            console.log('📞 Ejecutando RPC call:', {
-                model: this.props.record.resModel,
-                method: 'get_dashboard_data_for_js',
-                args: [this.props.record.resId]
-            });
-            
+        try {            
             const dashboardData = await this.rpc('/web/dataset/call_kw', {
                 model: this.props.record.resModel,
                 method: 'get_dashboard_data_for_js',
@@ -175,10 +137,7 @@ export class SupersetDashboardIntegrated extends Component {
                 kwargs: {}
             });
 
-            console.log('📞 RPC response recibido:', dashboardData);
-
             if (dashboardData.error) {
-                console.error('❌ Error en RPC response:', dashboardData.error);
                 throw new Error(dashboardData.error);
             }
 
@@ -219,8 +178,10 @@ export class SupersetDashboardIntegrated extends Component {
             throw new Error('Contenedor del dashboard no disponible');
         }
 
-        // Limpiar contenedor
+        // Limpiar contenedor y asegurar ancho completo
         container.innerHTML = '';
+        container.style.width = '100%';
+        container.style.height = '100%';
 
         try {
             const config = {
@@ -231,25 +192,16 @@ export class SupersetDashboardIntegrated extends Component {
                 debug: data.debug_mode || false
             };
 
-            console.log('📊 Embedding dashboard con config:', config);
             await window.supersetEmbeddedSdk.embedDashboard(config);
             
             this.state.isEmbedded = true;
 
         } catch (error) {
-            console.error('❌ Error en embedding:', error);
             throw new Error('Error embebiendo dashboard: ' + error.message);
         }
     }
 
     clearDashboard() {
-        console.log('🧹 clearDashboard ejecutado:', {
-            hadElement: !!this.dashboardRef.el,
-            wasEmbedded: this.state.isEmbedded,
-            currentDashboardId: this.currentDashboardId,
-            lastLoadedId: this.state.lastLoadedId
-        });
-        
         if (this.dashboardRef.el) {
             this.dashboardRef.el.innerHTML = '';
         }
@@ -257,8 +209,6 @@ export class SupersetDashboardIntegrated extends Component {
         this.state.isEmbedded = false;
         this.state.dashboardData = null;
         this.state.error = null;
-        
-        console.log('✅ Dashboard limpiado completado');
     }
 
     async reloadDashboard() {
