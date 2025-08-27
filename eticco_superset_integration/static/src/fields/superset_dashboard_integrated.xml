@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="eticco_superset_integration.SupersetDashboardIntegratedTemplate">
-        <div class="o_field_superset_dashboard_integrated w-100" t-att-class="props.class">
+        <div class="o_field_superset_dashboard_integrated w-100" t-att-class="props.class" style="width: 100%;">
             
             <!-- Selector de Dashboard Optimizado -->
-            <div class="superset_selector w-100 bg-light p-3 border rounded mb-3">
+            <div class="superset_selector w-100 bg-light p-3 border rounded mb-3" style="width: 100%; max-width: 100%;">
                 <div class="row align-items-center">
                     <div class="col-12">
                         <label class="form-label fw-bold mb-2">
                             <i class="fa fa-dashboard me-2"></i>
                             Seleccionar Dashboard
                         </label>
-                        <div class="row align-items-center">
-                            <div class="col-md-9">
-                                <select class="form-select form-select-lg" 
+                        <div class="row align-items-center w-100">
+                            <div class="col-10">
+                                <select class="form-select form-select-lg w-100" 
                                         t-att-name="props.name"
                                         t-att-value="currentDashboardId"
-                                        t-on-change="onDashboardSelectionChange">
+                                        t-on-change="onDashboardSelectionChange"
+                                        style="width: 100%;">
                                     <option value="">-- Selecciona un dashboard --</option>
                                     <t t-foreach="getDashboardOptions()" t-as="option" t-key="option[0]">
                                         <option t-att-value="option[0]" 
@@ -25,8 +26,8 @@
                                     </t>
                                 </select>
                             </div>
-                            <div class="col-md-3 text-end">
-                        <div class="d-flex flex-column align-items-end">
+                            <div class="col-2">
+                                <div class="d-flex flex-column align-items-end">
                             <!-- Estado del Dashboard -->
                             <div class="mb-2">
                                 <span t-if="state.isLoading" class="badge bg-primary fs-6">
@@ -45,9 +46,7 @@
                                     <i class="fa fa-clock-o me-1"></i>
                                     Cargando automáticamente...
                                 </span>
-                            </div>
-                            
-                            <!-- Botón de Recarga eliminado - usar el del header -->
+                                </div>
                             </div>
                         </div>
                     </div>

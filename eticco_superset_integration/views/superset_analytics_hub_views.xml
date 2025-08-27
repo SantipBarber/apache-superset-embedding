@@ -23,11 +23,13 @@
                 </div>
 
                 <!-- Contenido sin sheet para aprovechar todo el ancho -->
-                <div invisible="not has_configuration or available_dashboards_count == 0">
+                <div invisible="not has_configuration or available_dashboards_count == 0" style="width: 100%;">
                     <field name="selected_dashboard" 
                            widget="superset_dashboard_integrated" 
-                           height="700px"
+                           height="calc(100vh - 200px)"
                            nolabel="1"
+                           class="w-100"
+                           style="width: 100%;"
                            options="{'no_create': True, 'no_edit': True}"/>
                 </div>
 
@@ -61,6 +63,7 @@
                 </div>
 
                 <!-- Campos invisibles -->
+                <field name="available_dashboards_count" invisible="1"/>
                 <field name="dashboard_loaded" invisible="1"/>
                 <field name="has_configuration" invisible="1"/>
                 <field name="current_dashboard_id" invisible="1"/>

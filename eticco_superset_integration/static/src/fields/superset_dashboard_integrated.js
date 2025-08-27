@@ -302,11 +302,13 @@ SupersetDashboardIntegrated.props = {
     record: Object,
     name: String,
     class: { type: String, optional: true },
-    height: { type: String, optional: true }
+    height: { type: String, optional: true },
+    width: { type: String, optional: true }
 };
 
 SupersetDashboardIntegrated.defaultProps = {
-    height: '700px'
+    height: '700px',
+    width: '100%'
 };
 
 registry.category("fields").add("superset_dashboard_integrated", {
@@ -315,7 +317,8 @@ registry.category("fields").add("superset_dashboard_integrated", {
     extractProps: ({ attrs }) => {
         return {
             class: attrs.class,
-            height: attrs.height
+            height: attrs.height,
+            width: attrs.width
         };
     },
 });
