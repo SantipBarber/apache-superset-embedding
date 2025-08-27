@@ -1,29 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="eticco_superset_integration.SupersetDashboardIntegratedTemplate">
-        <div class="o_field_superset_dashboard_integrated" t-att-class="props.class">
+        <div class="o_field_superset_dashboard_integrated w-100" t-att-class="props.class">
             
-            <!-- Selector de Dashboard Simplificado -->
-            <div class="superset_selector bg-light p-3 border rounded mb-3">
+            <!-- Selector de Dashboard Optimizado -->
+            <div class="superset_selector w-100 bg-light p-3 border rounded mb-3">
                 <div class="row align-items-center">
-                    <div class="col-md-8">
+                    <div class="col-12">
                         <label class="form-label fw-bold mb-2">
                             <i class="fa fa-dashboard me-2"></i>
                             Seleccionar Dashboard
                         </label>
-                        <select class="form-select form-select-lg" 
-                                t-att-name="props.name"
-                                t-att-value="currentDashboardId"
-                                t-on-change="onDashboardSelectionChange">
-                            <option value="">-- Selecciona un dashboard --</option>
-                            <t t-foreach="getDashboardOptions()" t-as="option" t-key="option[0]">
-                                <option t-att-value="option[0]" 
-                                        t-esc="option[1]">
-                                </option>
-                            </t>
-                        </select>
-                    </div>
-                    <div class="col-md-4 text-end">
+                        <div class="row align-items-center">
+                            <div class="col-md-9">
+                                <select class="form-select form-select-lg" 
+                                        t-att-name="props.name"
+                                        t-att-value="currentDashboardId"
+                                        t-on-change="onDashboardSelectionChange">
+                                    <option value="">-- Selecciona un dashboard --</option>
+                                    <t t-foreach="getDashboardOptions()" t-as="option" t-key="option[0]">
+                                        <option t-att-value="option[0]" 
+                                                t-esc="option[1]">
+                                        </option>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="col-md-3 text-end">
                         <div class="d-flex flex-column align-items-end">
                             <!-- Estado del Dashboard -->
                             <div class="mb-2">
@@ -45,13 +47,8 @@
                                 </span>
                             </div>
                             
-                            <!-- Botón de Recarga -->
-                            <button class="btn btn-outline-secondary btn-sm" 
-                                    t-on-click="reloadDashboard"
-                                    t-att-disabled="!isCurrentDashboardLoaded">
-                                <i class="fa fa-refresh me-1"></i>
-                                Actualizar
-                            </button>
+                            <!-- Botón de Recarga eliminado - usar el del header -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -66,8 +63,8 @@
             </div>
 
             <!-- Contenedor del Dashboard -->
-            <div class="superset_dashboard_container border rounded overflow-hidden"
-                 t-att-style="'height: ' + props.height + '; background: #f8f9fa;'">
+            <div class="superset_dashboard_container w-100 border rounded overflow-hidden"
+                 t-att-style="'height: ' + props.height + '; width: 100%; background: #f8f9fa;'">
                 
                 <!-- Dashboard Embebido -->
                 <div t-if="isDashboardValid(currentDashboardId) and !state.error" 
