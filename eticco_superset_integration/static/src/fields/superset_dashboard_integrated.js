@@ -20,9 +20,12 @@ export class SupersetDashboardIntegrated extends Component {
         this.state = useState({
             isLoading: false,
             error: null,
+            errorType: null,
+            actionRequired: null,
             dashboardData: null,
             isEmbedded: false,
-            lastLoadedId: null
+            lastLoadedId: null,
+            lastError: null
         });
 
         onWillStart(this.onWillStart.bind(this));
@@ -141,7 +144,13 @@ export class SupersetDashboardIntegrated extends Component {
             });
 
             if (dashboardData.error) {
-                throw new Error(dashboardData.error);
+                // Crear error estructurado con información detallada
+                const errorObj = new Error(dashboardData.user_message || dashboardData.error);
+                errorObj.errorType = dashboardData.error_type;
+                errorObj.actionRequired = dashboardData.action_required;
+                errorObj.technicalDetails = dashboardData.technical_details;
+                errorObj.originalError = dashboardData.error;
+                throw errorObj;
             }
 
             this.state.dashboardData = dashboardData;
@@ -156,12 +165,65 @@ export class SupersetDashboardIntegrated extends Component {
 
         } catch (error) {
             console.error('❌ Error cargando dashboard:', error);
-            this.state.error = error.message || _t('Error desconocido cargando dashboard');
             
-            this.notification.add(
-                _t('Error cargando dashboard: ') + this.state.error,
-                { type: 'danger' }
-            );
+            // Manejar errores según su tipo específico
+            let errorMessage = error.message || _t('Error desconocido cargando dashboard');
+            let notificationType = 'danger';
+            let sticky = true;
+            
+            // Ajustar mensaje y comportamiento según tipo de error
+            if (error.errorType) {
+                switch (error.errorType) {
+                    case 'connection_error':
+                    case 'timeout_error':
+                        notificationType = 'warning';
+                        errorMessage = _t('🌐 ') + error.message;
+                        break;
+                        
+                    case 'auth_error':
+                    case 'permission_error':
+                    case 'token_expired':
+                        notificationType = 'danger';
+                        errorMessage = _t('🔒 ') + error.message;
+                        break;
+                        
+                    case 'server_error':
+                        notificationType = 'warning';
+                        errorMessage = _t('⚠️ ') + error.message;
+                        break;
+                        
+                    case 'dashboard_not_found':
+                    case 'embedding_disabled':
+                        notificationType = 'info';
+                        errorMessage = _t('📊 ') + error.message;
+                        break;
+                        
+                    case 'config_error':
+                        notificationType = 'warning';
+                        errorMessage = _t('⚙️ ') + error.message;
+                        break;
+                        
+                    default:
+                        errorMessage = _t('❌ ') + error.message;
+                }
+            }
+            
+            this.state.error = error.message;
+            this.state.errorType = error.errorType;
+            this.state.actionRequired = error.actionRequired;
+            this.state.lastError = error;
+            
+            // Mostrar notificación con tipo apropiado
+            this.notification.add(errorMessage, { 
+                type: notificationType,
+                sticky: sticky
+            });
+            
+            // Log técnico para administradores
+            if (error.technicalDetails) {
+                console.error('Detalles técnicos:', error.technicalDetails);
+            }
+            
         } finally {
             this.state.isLoading = false;
         }
@@ -212,6 +274,9 @@ export class SupersetDashboardIntegrated extends Component {
         this.state.isEmbedded = false;
         this.state.dashboardData = null;
         this.state.error = null;
+        this.state.errorType = null;
+        this.state.actionRequired = null;
+        this.state.lastError = null;
     }
 
     async reloadDashboard() {
@@ -230,13 +295,32 @@ export class SupersetDashboardIntegrated extends Component {
 
     getLoadingMessage() {
         if (this.state.isLoading) {
-            return _t('Cargando dashboard...');
+            return _t('⏳ Cargando dashboard...');
         }
         if (this.state.error) {
-            return _t('Error: ') + this.state.error;
+            // Mensaje específico según tipo de error
+            switch (this.state.errorType) {
+                case 'connection_error':
+                    return _t('🌐 Servidor no disponible');
+                case 'timeout_error':
+                    return _t('⏰ Conexión lenta');
+                case 'auth_error':
+                case 'permission_error':
+                    return _t('🔒 Sin permisos');
+                case 'server_error':
+                    return _t('⚠️ Error del servidor');
+                case 'dashboard_not_found':
+                    return _t('📊 Dashboard no encontrado');
+                case 'embedding_disabled':
+                    return _t('📊 Embedding deshabilitado');
+                case 'config_error':
+                    return _t('⚙️ Configuración inválida');
+                default:
+                    return _t('❌ Error: ') + this.state.error;
+            }
         }
         if (!this.currentDashboardId) {
-            return _t('Selecciona un dashboard para comenzar');
+            return _t('👆 Selecciona un dashboard para comenzar');
         }
         if (!this.isDashboardValid(this.currentDashboardId)) {
             if (this.currentDashboardId === 'no_config') {
@@ -245,9 +329,66 @@ export class SupersetDashboardIntegrated extends Component {
             if (this.currentDashboardId === 'no_dashboards') {
                 return _t('❌ No hay dashboards disponibles');
             }
-            return _t('Dashboard no válido');
+            return _t('🚫 Dashboard no válido');
         }
-        return _t('Dashboard listo');
+        return _t('✅ Dashboard listo');
+    }
+    
+    getActionButton() {
+        if (!this.state.error || !this.state.actionRequired) {
+            return null;
+        }
+        
+        switch (this.state.actionRequired) {
+            case 'retry':
+            case 'retry_later':
+                return {
+                    text: _t('🔄 Reintentar'),
+                    class: 'btn-outline-primary',
+                    action: () => this.reloadDashboard()
+                };
+            case 'refresh_page':
+            case 'reload_page':
+                return {
+                    text: _t('↻ Recargar página'),
+                    class: 'btn-outline-warning', 
+                    action: () => window.location.reload()
+                };
+            case 'check_credentials':
+            case 'check_config':
+                return {
+                    text: _t('⚙️ Ir a Ajustes'),
+                    class: 'btn-outline-info',
+                    action: () => this.openSettings()
+                };
+            case 'contact_admin':
+                return {
+                    text: _t('📞 Contactar administrador'),
+                    class: 'btn-outline-secondary',
+                    action: () => this.notification.add(_t('Contacta al administrador del sistema para resolver este problema.'), { type: 'info' })
+                };
+            case 'select_different':
+                return {
+                    text: _t('📋 Seleccionar otro dashboard'),
+                    class: 'btn-outline-info',
+                    action: () => {
+                        // Limpiar selección actual
+                        this.props.record.update({ [this.props.name]: '' });
+                        this.clearDashboard();
+                    }
+                };
+            default:
+                return {
+                    text: _t('🔄 Intentar de nuevo'),
+                    class: 'btn-outline-primary',
+                    action: () => this.reloadDashboard()
+                };
+        }
+    }
+    
+    openSettings() {
+        // Abrir Settings de Superset
+        window.open('/web#action=base.action_res_config_settings', '_blank');
     }
 
     async initializeConfiguration() {

@@ -91,44 +91,24 @@ class ResConfigSettings(models.TransientModel):
 
     @api.depends('superset_url', 'superset_username', 'superset_password')
     def _compute_connection_status(self):
-        """Calcular estado de conexión dinámicamente"""
+        """Calcular estado de conexión usando lógica centralizada"""
         for record in self:
-            if not record.superset_url or not record.superset_username or not record.superset_password:
-                record.superset_connection_status = 'Configuración incompleta'
-            else:
-                record.superset_connection_status = 'Configurado (usar Probar Conexión para verificar)'
+            # Usar lógica unificada de superset_utils
+            utils = self.env['superset.utils']
+            status = utils.get_system_status(force_refresh=False)
+            record.superset_connection_status = status['connection_status']
 
     @api.depends('superset_url', 'superset_username', 'superset_password')
     def _compute_dashboards_info(self):
-        """Obtener información de dashboards si es posible"""
+        """Obtener información de dashboards usando lógica centralizada"""
         for record in self:
-            record.superset_dashboards_count = 0
-            record.superset_embedding_count = 0
-           
-            if record.superset_url and record.superset_username and record.superset_password:
-                try:
-                    # Llamar al endpoint interno para obtener stats
-                    dashboards_info = self._get_dashboards_stats()
-                    record.superset_dashboards_count = dashboards_info.get('total', 0)
-                    record.superset_embedding_count = dashboards_info.get('with_embedding', 0)
-                except:
-                    pass  # Ignorar errores al calcular
+            # Usar lógica unificada de superset_utils
+            utils = self.env['superset.utils']
+            status = utils.get_system_status(force_refresh=False)
+            
+            record.superset_dashboards_count = status.get('total_dashboards', 0)
+            record.superset_embedding_count = status.get('with_embedding', 0)
 
-    def _get_dashboards_stats(self):
-        """Obtener estadísticas básicas de dashboards"""
-        try:
-            # Usar el controlador interno
-            result = self.env['ir.http']._dispatch('/superset/dashboards')
-           
-            if result.get('success'):
-                return {
-                    'total': result.get('total', 0),
-                    'with_embedding': result.get('with_embedding', 0)
-                }
-        except Exception as e:
-            _logger.debug('Error obteniendo stats de dashboards: %s', str(e))
-       
-        return {'total': 0, 'with_embedding': 0}
 
     def test_superset_connection(self):
         """Probar conexión con Superset usando utilidades centralizadas"""

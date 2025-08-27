@@ -288,3 +288,119 @@ class SupersetUtils(models.AbstractModel):
             raise ValidationError(_('Dashboard "%s" no tiene UUID de embedding') % dashboard_data.get('title'))
             
         return True
+    
+    @api.model
+    def is_configured(self):
+        """Verificar si Superset está configurado (sin hacer peticiones HTTP)"""
+        try:
+            config = self.get_superset_config()
+            return bool(config.get('url') and config.get('username') and config.get('password'))
+        except:
+            return False
+    
+    @api.model
+    def get_system_status(self, force_refresh=False):
+        """Obtener estado del sistema de forma unificada y optimizada"""
+        # Verificación básica primero (sin HTTP)
+        if not self.is_configured():
+            return {
+                'has_configuration': False,
+                'connection_status': 'Configuración incompleta',
+                'total_dashboards': 0,
+                'with_embedding': 0,
+                'last_check': None
+            }
+        
+        cache_key = 'system_status'
+        cache_duration = 300  # 5 minutos
+        
+        # Usar cache si no se fuerza refresh
+        if not force_refresh and hasattr(self, '_status_cache'):
+            cache_entry = self._status_cache.get(cache_key)
+            if cache_entry and cache_entry['expires'] > time.time():
+                return cache_entry['data']
+        
+        # Calcular estado completo con HTTP (solo si es necesario)
+        try:
+            config = self.get_superset_config()
+            self.validate_config(config)
+            
+            # Verificar conectividad básica
+            access_token = self.get_access_token(config)
+            
+            # Obtener estadísticas de dashboards
+            dashboards_url = f"{config['url']}/api/v1/dashboard/"
+            params = {'q': '(page:0,page_size:100)'}
+            
+            response = requests.get(
+                dashboards_url,
+                params=params,
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=config.get('timeout', 30)
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                dashboards = [d for d in data.get('result', []) if d.get('published')]
+                
+                # Contar dashboards con embedding
+                embedding_count = 0
+                for dashboard in dashboards:
+                    try:
+                        embedding_url = f"{config['url']}/api/v1/dashboard/{dashboard.get('id')}/embedded"
+                        embedding_response = requests.get(
+                            embedding_url,
+                            headers={'Authorization': f'Bearer {access_token}'},
+                            timeout=config.get('timeout', 30)
+                        )
+                        if (embedding_response.status_code == 200 and 
+                            embedding_response.json().get('result', {}).get('uuid')):
+                            embedding_count += 1
+                    except:
+                        pass
+                
+                status = {
+                    'has_configuration': True,
+                    'connection_status': 'Conectado correctamente',
+                    'total_dashboards': len(dashboards),
+                    'with_embedding': embedding_count,
+                    'last_check': time.time()
+                }
+            else:
+                status = {
+                    'has_configuration': True,
+                    'connection_status': f'Error HTTP {response.status_code}',
+                    'total_dashboards': 0,
+                    'with_embedding': 0,
+                    'last_check': time.time()
+                }
+                
+        except Exception as e:
+            _logger.debug('Error verificando conexión con Superset: %s', str(e))
+            status = {
+                'has_configuration': True,
+                'connection_status': f'Error de conexión: {str(e)[:50]}...',
+                'total_dashboards': 0,
+                'with_embedding': 0,
+                'last_check': time.time()
+            }
+        
+        # Guardar en cache
+        if not hasattr(self, '_status_cache'):
+            self._status_cache = {}
+        self._status_cache[cache_key] = {
+            'data': status,
+            'expires': time.time() + cache_duration
+        }
+        
+        return status
+    
+    @api.model  
+    def get_dashboard_stats_cached(self):
+        """Compatibilidad: obtener solo stats de dashboards"""
+        status = self.get_system_status()
+        return {
+            'has_configuration': status['has_configuration'],
+            'total_dashboards': status['total_dashboards'],
+            'with_embedding': status['with_embedding']
+        }
