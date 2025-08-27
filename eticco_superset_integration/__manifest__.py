@@ -52,6 +52,8 @@
     
     'assets': {
         'web.assets_backend': [
+            # Estilos específicos para componentes Superset
+            'eticco_superset_integration/static/src/scss/superset_dashboard.scss',
             # Componente integrado con UX mejorada
             'eticco_superset_integration/static/src/fields/superset_dashboard_integrated.js',
             'eticco_superset_integration/static/src/fields/superset_dashboard_integrated.xml',

@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="eticco_superset_integration.SupersetDashboardIntegratedTemplate">
-        <div class="o_field_superset_dashboard_integrated w-100" t-att-class="props.class" style="width: 100%;">
+        <div class="o_field_superset_dashboard_integrated" t-att-class="props.class">
 
-            <!-- Selector de Dashboard Compacto -->
-            <div class="superset_selector w-100 bg-light p-2 border rounded mb-2" style="width: 100%; max-width: 100%;">
+            <!-- Selector de Dashboard -->
+            <div class="superset_selector">
                 <div class="row align-items-center g-2">
                     <div class="col-auto">
-                        <label class="form-label fw-bold mb-0">
-                            <i class="fa fa-dashboard me-1"></i>
+                        <label class="form-label">
+                            <i class="fa fa-dashboard"></i>
                             Dashboard:
                         </label>
                     </div>
                     <div class="col">
-                        <select class="form-select w-100" t-att-name="props.name" t-att-value="currentDashboardId" t-on-change="onDashboardSelectionChange" style="width: 100%;">
+                        <select class="form-select" t-att-name="props.name" t-att-value="currentDashboardId" t-on-change="onDashboardSelectionChange">
                             <option value="">-- Selecciona un dashboard --</option>
                             <t t-foreach="getDashboardOptions()" t-as="option" t-key="option[0]">
                                 <option t-att-value="option[0]" t-esc="option[1]">
@@ -22,25 +22,25 @@
                         </select>
                     </div>
                     <div class="col-auto">
-                        <!-- Estado del Dashboard alineado -->
+                        <!-- Estado del Dashboard -->
                         <span t-if="state.isLoading" class="badge bg-primary">
-                            <i class="fa fa-spinner fa-spin me-1"></i>
+                            <i class="fa fa-spinner fa-spin"></i>
                             Cargando...
                         </span>
                         <span t-elif="state.error" class="badge bg-danger">
-                            <i class="fa fa-exclamation-triangle me-1"></i>
+                            <i class="fa fa-exclamation-triangle"></i>
                             Error
                         </span>
                         <span t-elif="isCurrentDashboardLoaded" class="badge bg-success">
-                            <i class="fa fa-check-circle me-1"></i>
+                            <i class="fa fa-check-circle"></i>
                             Activo
                         </span>
                         <span t-elif="isDashboardValid(currentDashboardId)" class="badge bg-warning">
-                            <i class="fa fa-clock-o me-1"></i>
+                            <i class="fa fa-clock-o"></i>
                             Cargando...
                         </span>
                         <small t-else="" class="text-muted">
-                            <i class="fa fa-info-circle me-1"></i>
+                            <i class="fa fa-info-circle"></i>
                             <span t-esc="getLoadingMessage()"/>
                         </small>
                     </div>
@@ -48,7 +48,7 @@
             </div>
 
             <!-- Contenedor del Dashboard -->
-            <div class="superset_dashboard_container w-100 border rounded overflow-hidden" t-att-style="'height: ' + props.height + '; width: 100%; background: #f8f9fa;'">
+            <div class="superset_dashboard_container" t-att-style="'height: ' + props.height">
 
                 <!-- Dashboard Embebido -->
                 <div t-if="isDashboardValid(currentDashboardId) and !state.error" class="h-100 w-100" t-ref="dashboardContainer">
@@ -58,22 +58,22 @@
                 <!-- Loading State -->
                 <div t-elif="state.isLoading" class="d-flex align-items-center justify-content-center h-100">
                     <div class="text-center">
-                        <div class="spinner-border text-primary mb-3" role="status">
+                        <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Cargando...</span>
                         </div>
-                        <h5 class="text-muted">Cargando dashboard...</h5>
-                        <p class="text-muted small">Esto puede tomar unos segundos</p>
+                        <h5>Cargando dashboard...</h5>
+                        <p>Esto puede tomar unos segundos</p>
                     </div>
                 </div>
 
                 <!-- Error State -->
                 <div t-elif="state.error" class="d-flex align-items-center justify-content-center h-100">
                     <div class="text-center">
-                        <i class="fa fa-exclamation-triangle fa-4x text-danger mb-3"></i>
+                        <i class="fa fa-exclamation-triangle fa-4x text-danger"></i>
                         <h5 class="text-danger">Error cargando dashboard</h5>
                         <p class="text-muted" t-esc="state.error"/>
-                        <button class="btn btn-outline-primary btn-sm" t-on-click="reloadDashboard">
-                            <i class="fa fa-refresh me-1"></i>
+                        <button class="btn btn-outline-primary" t-on-click="reloadDashboard">
+                            <i class="fa fa-refresh"></i>
                             Intentar de nuevo
                         </button>
                     </div>
@@ -82,9 +82,9 @@
                 <!-- Empty State -->
                 <div t-else="" class="d-flex align-items-center justify-content-center h-100">
                     <div class="text-center">
-                        <i t-if="!currentDashboardId or currentDashboardId == ''" class="fa fa-arrow-up fa-4x text-muted mb-3"></i>
-                        <i t-elif="currentDashboardId == 'no_config'" class="fa fa-exclamation-triangle fa-4x text-warning mb-3"></i>
-                        <i t-elif="currentDashboardId == 'no_dashboards'" class="fa fa-info-circle fa-4x text-info mb-3"></i>
+                        <i t-if="!currentDashboardId or currentDashboardId == ''" class="fa fa-arrow-up fa-4x text-muted"></i>
+                        <i t-elif="currentDashboardId == 'no_config'" class="fa fa-exclamation-triangle fa-4x text-warning"></i>
+                        <i t-elif="currentDashboardId == 'no_dashboards'" class="fa fa-info-circle fa-4x text-info"></i>
 
                         <h5 t-if="!currentDashboardId or currentDashboardId == ''" class="text-muted">Selecciona un dashboard</h5>
                         <h5 t-elif="currentDashboardId == 'no_config'" class="text-warning">Configuración requerida</h5>
