@@ -43,30 +43,15 @@ export class SupersetDashboardIntegrated extends Component {
     }
 
     onPatched() {
-        // LOGS DETALLADOS PARA DEPURACIÓN
-        console.log('🔄 onPatched ejecutado:', {
+        // TEMPORALMENTE DESHABILITADO PARA EVITAR BUCLES
+        console.log('🔄 onPatched ejecutado (DESHABILITADO):', {
             currentDashboardId: this.currentDashboardId,
             lastLoadedId: this.state.lastLoadedId,
-            isLoading: this.state.isLoading,
-            shouldLoad: this.currentDashboardId !== this.state.lastLoadedId && 
-                       this.isDashboardValid(this.currentDashboardId) &&
-                       !this.state.isLoading
+            isLoading: this.state.isLoading
         });
         
-        // Auto-cargar cuando cambia la selección
-        if (this.currentDashboardId !== this.state.lastLoadedId && 
-            this.isDashboardValid(this.currentDashboardId) &&
-            !this.state.isLoading) {
-            
-            console.log('✅ Iniciando auto-carga desde onPatched');
-            this.loadDashboard();
-        } else {
-            console.log('❌ No se auto-carga por condiciones:', {
-                sameId: this.currentDashboardId === this.state.lastLoadedId,
-                invalidDashboard: !this.isDashboardValid(this.currentDashboardId),
-                isLoading: this.state.isLoading
-            });
-        }
+        // NO AUTO-CARGAR desde onPatched para evitar bucles infinitos
+        // La carga se hará directamente desde onDashboardSelectionChange
     }
 
     onWillUnmount() {
@@ -123,8 +108,16 @@ export class SupersetDashboardIntegrated extends Component {
         console.log('💾 Guardando cambios...');
         await this.props.record.save();
 
-        console.log('✅ Selección completada, esperando onPatched...');
-        // La carga automática se activará en onPatched
+        // 🚀 CARGA DIRECTA INMEDIATA (sin esperar onPatched)
+        if (this.isDashboardValid(newValue) && !this.state.isLoading) {
+            console.log('🚀 Iniciando carga DIRECTA después de selección');
+            await this.loadDashboard();
+        } else {
+            console.log('⏸️ No se carga directamente:', {
+                isValid: this.isDashboardValid(newValue),
+                isLoading: this.state.isLoading
+            });
+        }
     }
 
     async loadSupersetSDK() {

@@ -235,23 +235,20 @@ class SupersetAnalyticsHub(models.Model):
                         dashboard_title = dashboard.get('dashboard_title', 'Sin título')
                         dashboard_uuid = dashboard.get('uuid')
                         
+                        # SOLO añadir dashboards que tienen embedding habilitado
                         if embedding_enabled:
-                            selection.append((dashboard_uuid, f"✅ {dashboard_title}"))
-                        else:
-                            selection.append((dashboard_uuid, f"❌ {dashboard_title} (sin embedding)"))
+                            selection.append((dashboard_uuid, f"📊 {dashboard_title}"))
                             
                     except Exception as e:
                         _logger.error('Error verificando embedding para dashboard %s: %s', 
                                     dashboard.get('id'), str(e))
-                        selection.append((
-                            dashboard.get('uuid'),
-                            f"❓ {dashboard.get('dashboard_title', 'Sin título')} (error)"
-                        ))
+                        # No añadir dashboards con errores al selector
                 
                 if not selection:
-                    return [('no_dashboards', '❌ No hay dashboards disponibles')]
+                    return [('no_dashboards', '❌ No hay dashboards con embedding disponibles')]
                     
-                selection.sort(key=lambda x: (not x[1].startswith('✅'), x[1]))
+                # Ordenar por título (todos tienen embedding ya)
+                selection.sort(key=lambda x: x[1])
                 return selection
                 
             except Exception as e:
@@ -363,17 +360,61 @@ class SupersetAnalyticsHub(models.Model):
             return {'error': 'No hay dashboard seleccionado'}
             
         try:
-            self._compute_dashboard_info()
-            
+            # Obtener configuración
             utils = self.env['superset.utils']
             config = utils.get_superset_config()
             utils.validate_config(config)
-            
-            if not all([self.current_dashboard_id, self.selected_dashboard, self.current_embedding_uuid]):
-                return {'error': 'Datos de dashboard incompletos'}
-            
             access_token = utils.get_access_token(config)
             
+            # Buscar el dashboard seleccionado directamente
+            dashboards_url = f"{config['url']}/api/v1/dashboard/"
+            params = {'q': '(page:0,page_size:100)'}
+            
+            response = requests.get(
+                dashboards_url,
+                params=params,
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=config.get('timeout', 30)
+            )
+            
+            if response.status_code != 200:
+                return {'error': f'Error obteniendo dashboards: {response.status_code}'}
+            
+            data = response.json()
+            dashboards = data.get('result', [])
+            
+            # Buscar el dashboard por UUID
+            dashboard = None
+            for d in dashboards:
+                if d.get('uuid') == self.selected_dashboard:
+                    dashboard = d
+                    break
+                    
+            if not dashboard:
+                return {'error': 'Dashboard no encontrado'}
+            
+            # Obtener embedding UUID
+            embedding_url = f"{config['url']}/api/v1/dashboard/{dashboard.get('id')}/embedded"
+            embedding_response = requests.get(
+                embedding_url,
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=config.get('timeout', 30)
+            )
+            
+            if embedding_response.status_code != 200:
+                return {'error': 'Dashboard no tiene embedding habilitado'}
+            
+            embedding_data = embedding_response.json()
+            embedding_uuid = embedding_data.get('result', {}).get('uuid')
+            
+            if not embedding_uuid:
+                return {'error': 'Dashboard sin embedding UUID'}
+            
+            # Actualizar campos del record
+            self.current_dashboard_id = dashboard.get('id')
+            self.current_dashboard_title = dashboard.get('dashboard_title', 'Sin título')
+            self.current_embedding_uuid = embedding_uuid
+            # Generar guest token
             guest_token_url = f"{config['url']}/api/v1/security/guest_token/"
             guest_data = {
                 'user': {
@@ -383,7 +424,7 @@ class SupersetAnalyticsHub(models.Model):
                 },
                 'resources': [{
                     'type': 'dashboard',
-                    'id': self.current_embedding_uuid
+                    'id': embedding_uuid  # Usar el UUID obtenido
                 }],
                 'rls': []
             }
@@ -410,11 +451,11 @@ class SupersetAnalyticsHub(models.Model):
             self.dashboard_loaded = True
             
             return {
-                'embedding_uuid': self.current_embedding_uuid,
+                'embedding_uuid': embedding_uuid,
                 'guest_token': guest_token,
                 'superset_domain': config['url'],
-                'dashboard_title': self.current_dashboard_title,
-                'dashboard_id': self.current_dashboard_id,
+                'dashboard_title': dashboard.get('dashboard_title', 'Sin título'),
+                'dashboard_id': dashboard.get('id'),
                 'debug_mode': config.get('debug_mode', False)
             }
             
