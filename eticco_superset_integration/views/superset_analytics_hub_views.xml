@@ -82,7 +82,7 @@
     </record>
 
     <!-- Acción personalizada que siempre usa get_default_hub -->
-    <record id="action_superset_analytics_hub_menu" model="ir.actions.server">
+    <record id="action_superset_analytics_hub_smart" model="ir.actions.server">
         <field name="name">Analytics Dashboard</field>
         <field name="model_id" ref="model_superset_analytics_hub"/>
         <field name="state">code</field>
@@ -102,6 +102,15 @@ action = {
     'context': {'form_view_ref': 'eticco_superset_integration.view_superset_analytics_hub_form'}
 }
         </field>
+    </record>
+
+    <!-- Mantener la acción original como act_window para compatibilidad -->
+    <record id="action_superset_analytics_hub_menu" model="ir.actions.act_window">
+        <field name="name">Analytics Dashboard</field>
+        <field name="res_model">superset.analytics.hub</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'create': False}</field>
     </record>
 
 

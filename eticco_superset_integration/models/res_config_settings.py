@@ -300,13 +300,17 @@ class ResConfigSettings(models.TransientModel):
                 }
             }
        
-        # Crear acción para el hub de analytics mejorado
+        # Obtener hub por defecto para el menú
+        hub = self.env['superset.analytics.hub'].get_default_hub()
+        
+        # Crear acción que apunta directamente al hub por defecto
         action = self.env['ir.actions.act_window'].create({
             'name': f'{menu_name} - Analytics Hub',
             'res_model': 'superset.analytics.hub',
             'view_mode': 'form',
             'target': 'current',
-            'context': "{}",
+            'res_id': hub.id,  # Siempre apuntar al hub por defecto
+            'context': "{'form_view_ref': 'eticco_superset_integration.view_superset_analytics_hub_form'}",
         })
        
         # Crear el menú
