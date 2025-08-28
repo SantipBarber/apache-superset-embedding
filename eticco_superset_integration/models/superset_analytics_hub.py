@@ -574,24 +574,16 @@ class SupersetAnalyticsHub(models.Model):
         """Refrescar opciones de dashboard (método público para llamadas desde JS)"""
         self.ensure_one()
         
-        _logger.info('🔍 [DEBUG] refresh_dashboard_options() - Iniciando para record ID: %s', self.id)
-        _logger.info('🔍 [DEBUG] Estado inicial: has_configuration=%s, available_dashboards_count=%s', 
-                    self.has_configuration, self.available_dashboards_count)
+        _logger.info('🔍 [TIMING] refresh_dashboard_options() - has_configuration inicial: %s', self.has_configuration)
         
         # Forzar recálculo de campos computados
-        _logger.info('🔍 [DEBUG] Llamando _compute_system_status()...')
         self._compute_system_status()
         
-        _logger.info('🔍 [DEBUG] Después de _compute_system_status: has_configuration=%s, available_dashboards_count=%s', 
-                    self.has_configuration, self.available_dashboards_count)
+        _logger.info('✅ [TIMING] refresh_dashboard_options() - has_configuration después: %s', self.has_configuration)
         
         # Forzar la re-evaluación de las opciones de dashboard
-        _logger.info('🔍 [DEBUG] Llamando _get_dashboard_selection()...')
         options = self._get_dashboard_selection()
-        _logger.info('🔍 [DEBUG] Opciones obtenidas: %s', options)
-        
         valid_count = len([opt for opt in options if opt[0] not in ['no_config', 'no_dashboards', 'error']])
-        _logger.info('🔍 [DEBUG] Opciones válidas encontradas: %s', valid_count)
         
         result = {
             'options_refreshed': True,
@@ -600,7 +592,6 @@ class SupersetAnalyticsHub(models.Model):
             'configuration_status': 'configured' if self.has_configuration else 'missing'
         }
         
-        _logger.info('✅ [DEBUG] refresh_dashboard_options() - Resultado: %s', result)
         return result
 
     def force_refresh_configuration(self):
@@ -638,21 +629,18 @@ class SupersetAnalyticsHub(models.Model):
     @api.model
     def get_default_hub(self):
         """Obtener o crear hub por defecto"""
-        _logger.info('🔍 [DEBUG] get_default_hub() - Buscando hub existente...')
         hub = self.search([], limit=1)
         
         if not hub:
-            _logger.info('🔍 [DEBUG] get_default_hub() - No existe hub, creando uno nuevo...')
             hub = self.create({})
-            _logger.info('✅ [DEBUG] get_default_hub() - Hub creado con ID: %s', hub.id)
+            _logger.info('🔍 [TIMING] get_default_hub() - Hub creado con ID: %s', hub.id)
         else:
-            _logger.info('✅ [DEBUG] get_default_hub() - Hub existente encontrado con ID: %s', hub.id)
+            _logger.info('🔍 [TIMING] get_default_hub() - Hub existente ID: %s, has_configuration: %s', 
+                        hub.id, hub.has_configuration)
         
         # Forzar el cálculo de campos computados para el hub
-        _logger.info('🔍 [DEBUG] get_default_hub() - Forzando cálculo de campos computados...')
         hub._compute_system_status()
         
-        _logger.info('🔍 [DEBUG] get_default_hub() - Estado del hub: has_configuration=%s, available_dashboards_count=%s', 
-                    hub.has_configuration, hub.available_dashboards_count)
+        _logger.info('✅ [TIMING] get_default_hub() - Después del cálculo has_configuration: %s', hub.has_configuration)
         
         return hub

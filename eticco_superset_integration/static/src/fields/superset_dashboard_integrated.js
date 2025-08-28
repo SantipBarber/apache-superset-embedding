@@ -41,21 +41,16 @@ export class SupersetDashboardIntegrated extends Component {
     }
 
     async onMounted() {
-        console.log('🔍 [DEBUG] SupersetDashboardIntegrated.onMounted() - Iniciando montaje');
-        console.log('🔍 [DEBUG] Estado inicial:', {
-            currentDashboardId: this.currentDashboardId,
-            recordData: this.props.record.data,
-            hasConfiguration: this.props.record.data.has_configuration,
-            availableDashboardsCount: this.props.record.data.available_dashboards_count
-        });
+        console.log('🔍 [TIMING] onMounted - has_configuration inicial:', this.props.record.data.has_configuration);
+        
+        // ⭐ FORZAR cálculo de campos antes de mostrar la interfaz
+        await this.ensureConfigurationIsComputed();
         
         // Verificar configuración y auto-seleccionar después del montaje
         await this.initializeConfiguration();
         
         // 🚀 Auto-selección inteligente y carga automática
         await this.performIntelligentAutoSelection();
-        
-        console.log('✅ [DEBUG] SupersetDashboardIntegrated.onMounted() - Montaje completado');
     }
 
     onPatched() {
@@ -82,27 +77,20 @@ export class SupersetDashboardIntegrated extends Component {
     }
 
     getDashboardOptions() {
-        console.log('🔍 [DEBUG] getDashboardOptions() - Iniciando');
-        
         const field = this.props.record.fields[this.props.name];
-        console.log('🔍 [DEBUG] Campo del record:', {
-            field: field,
-            hasSelection: field && field.selection,
-            selection: field?.selection
-        });
+        const hasConfiguration = this.props.record.data.has_configuration;
+        
+        console.log('🔍 [TIMING] getDashboardOptions - has_configuration:', hasConfiguration, 'field.selection:', field?.selection?.length || 0);
         
         if (field && field.selection) {
-            console.log('✅ [DEBUG] Opciones encontradas en field.selection:', field.selection);
             return field.selection;
         }
         
-        const defaultOptions = [
+        // Opciones por defecto mientras se calcula la configuración
+        return [
             ['no_config', '⚠️ Configurar Superset en Ajustes'],
             ['no_dashboards', '❌ No hay dashboards disponibles']
         ];
-        
-        console.log('⚠️ [DEBUG] Usando opciones por defecto (sin configuración):', defaultOptions);
-        return defaultOptions;
     }
 
     async onDashboardSelectionChange(event) {
@@ -441,24 +429,38 @@ export class SupersetDashboardIntegrated extends Component {
         }
     }
     
+    async ensureConfigurationIsComputed() {
+        console.log('🔍 [TIMING] ensureConfigurationIsComputed - Forzando cálculo...');
+        
+        try {
+            // Forzar cálculo de campos computados ANTES de mostrar la interfaz
+            await this.rpc('/web/dataset/call_kw', {
+                model: this.props.record.resModel,
+                method: 'force_refresh_configuration',
+                args: [this.props.record.resId],
+                kwargs: {}
+            });
+            
+            // Recargar el record para obtener los campos actualizados
+            await this.props.record.load();
+            
+            console.log('✅ [TIMING] ensureConfigurationIsComputed - Configuración forzada. has_configuration:', 
+                       this.props.record.data.has_configuration);
+            
+        } catch (error) {
+            console.error('❌ [TIMING] Error forzando configuración:', error);
+        }
+    }
+
     openSettings() {
         // Abrir Settings de Superset
         window.open('/web#action=base.action_res_config_settings', '_blank');
     }
 
     async initializeConfiguration() {
-        console.log('🔍 [DEBUG] initializeConfiguration() - Iniciando');
-        console.log('🔍 [DEBUG] Record antes de refresh:', {
-            resId: this.props.record.resId,
-            resModel: this.props.record.resModel,
-            hasConfiguration: this.props.record.data.has_configuration,
-            availableDashboardsCount: this.props.record.data.available_dashboards_count,
-            selectedDashboard: this.props.record.data.selected_dashboard
-        });
+        console.log('🔍 [TIMING] initializeConfiguration - has_configuration antes:', this.props.record.data.has_configuration);
         
         try {
-            // Siempre verificar el estado actual de la configuración
-            console.log('🔍 [DEBUG] Llamando refresh_dashboard_options...');
             const result = await this.rpc('/web/dataset/call_kw', {
                 model: this.props.record.resModel,
                 method: 'refresh_dashboard_options',
@@ -466,58 +468,35 @@ export class SupersetDashboardIntegrated extends Component {
                 kwargs: {}
             });
 
-            console.log('🔍 [DEBUG] Resultado refresh_dashboard_options:', result);
-
-            // Refrescar el record para obtener las opciones actualizadas
             if (result.options_refreshed) {
-                console.log('🔍 [DEBUG] Recargando record...');
                 await this.props.record.load();
-                
-                console.log('🔍 [DEBUG] Record después de load:', {
-                    hasConfiguration: this.props.record.data.has_configuration,
-                    availableDashboardsCount: this.props.record.data.available_dashboards_count,
-                    selectedDashboard: this.props.record.data.selected_dashboard,
-                    allData: this.props.record.data
-                });
+                console.log('✅ [TIMING] initializeConfiguration - has_configuration después:', this.props.record.data.has_configuration);
                 
                 // Si se detectó configuración válida, mostrar notificación
                 if (result.has_configuration && result.available_options > 0) {
-                    console.log('✅ [DEBUG] Configuración válida encontrada');
                     this.notification.add(
                         `✅ ${result.available_options} dashboard(s) disponible(s)`,
                         { type: 'success' }
                     );
-                } else {
-                    console.log('⚠️ [DEBUG] Sin configuración válida o sin dashboards');
                 }
-            } else {
-                console.log('⚠️ [DEBUG] refresh_dashboard_options no reportó cambios');
             }
 
         } catch (error) {
-            console.error('❌ [DEBUG] Error inicializando configuración:', error);
-            // No mostrar error al usuario, solo en consola para debug
+            console.error('❌ [TIMING] Error inicializando configuración:', error);
         }
-        
-        console.log('✅ [DEBUG] initializeConfiguration() - Completado');
     }
 
     async performIntelligentAutoSelection() {
-        console.log('🔍 [DEBUG] performIntelligentAutoSelection() - Iniciando');
-        
         try {
             const options = this.getDashboardOptions();
-            console.log('🔍 [DEBUG] Opciones de dashboard obtenidas:', options);
-            
             const validOptions = options.filter(([key]) => this.isDashboardValid(key));
-            console.log('🔍 [DEBUG] Opciones válidas filtradas:', validOptions);
-            
             const currentSelection = this.currentDashboardId;
-            console.log('🔍 [DEBUG] Selección actual:', currentSelection);
+
+            console.log('🔍 [TIMING] Auto-selección - opciones válidas:', validOptions.length, 'selección actual:', currentSelection);
 
             // Caso 1: Ya hay selección válida - cargar directamente
             if (currentSelection && this.isDashboardValid(currentSelection)) {
-                console.log('🎯 [DEBUG] Dashboard válido ya seleccionado, cargando...');
+                console.log('🎯 [TIMING] Dashboard válido ya seleccionado, cargando...');
                 await this.loadDashboard();
                 return;
             }
@@ -525,66 +504,51 @@ export class SupersetDashboardIntegrated extends Component {
             // Caso 2: Solo hay 1 dashboard disponible - auto-seleccionar y cargar
             if (validOptions.length === 1) {
                 const [dashboardId, dashboardTitle] = validOptions[0];
-                console.log('🚀 [DEBUG] Auto-seleccionando único dashboard disponible:', { dashboardId, dashboardTitle });
+                console.log('🚀 [TIMING] Auto-seleccionando único dashboard:', dashboardTitle);
                 
-                // Actualizar selección
                 await this.props.record.update({
                     [this.props.name]: dashboardId
                 });
                 await this.props.record.save();
                 
-                // Notificar al usuario
                 this.notification.add(
                     `🎯 Dashboard seleccionado automáticamente: ${dashboardTitle.replace(/^📊\s*/, '')}`,
                     { type: 'info' }
                 );
                 
-                // Cargar inmediatamente
                 await this.loadDashboard();
                 return;
             }
 
             // Caso 3: Múltiples dashboards - verificar preferencia del usuario
             if (validOptions.length > 1) {
-                console.log('🔍 [DEBUG] Múltiples dashboards encontrados, verificando preferencia...');
                 const lastUsedDashboard = await this.getLastUsedDashboard();
-                console.log('🔍 [DEBUG] Último dashboard usado:', lastUsedDashboard);
                 
                 if (lastUsedDashboard && this.isDashboardValid(lastUsedDashboard)) {
-                    // Verificar que el dashboard aún esté disponible
                     const stillAvailable = validOptions.some(([key]) => key === lastUsedDashboard);
-                    console.log('🔍 [DEBUG] Dashboard aún disponible:', stillAvailable);
                     
                     if (stillAvailable) {
-                        console.log('🔄 [DEBUG] Restaurando último dashboard usado:', lastUsedDashboard);
+                        console.log('🔄 [TIMING] Restaurando último dashboard usado');
                         
                         await this.props.record.update({
                             [this.props.name]: lastUsedDashboard
                         });
                         await this.props.record.save();
                         
-                        // Cargar silenciosamente sin notificación
                         await this.loadDashboard();
                         return;
                     }
                 }
                 
-                // Sin preferencia previa - mostrar opciones disponibles
-                console.log('🔍 [DEBUG] Sin preferencia previa válida, mostrando opciones');
                 this.notification.add(
                     `📋 ${validOptions.length} dashboards disponibles. Selecciona uno para comenzar.`,
                     { type: 'info', sticky: false }
                 );
             }
 
-            console.log('⚠️ [DEBUG] No hay dashboards válidos disponibles. ValidOptions.length:', validOptions.length);
-
         } catch (error) {
-            console.error('❌ [DEBUG] Error en auto-selección inteligente:', error);
-            // Fallar silenciosamente - el usuario puede seleccionar manualmente
+            console.error('❌ [TIMING] Error en auto-selección:', error);
         }
-        
-        console.log('✅ [DEBUG] performIntelligentAutoSelection() - Completado');
     }
 
     async getLastUsedDashboard() {
