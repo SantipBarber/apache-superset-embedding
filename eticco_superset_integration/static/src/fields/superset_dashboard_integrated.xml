@@ -58,11 +58,26 @@
                 <!-- Loading State -->
                 <div t-elif="state.isLoading" class="d-flex align-items-center justify-content-center h-100">
                     <div class="text-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Cargando...</span>
+                        <div class="superset-loading-container" t-att-data-step="state.loadingStep || 1">
+                            <div class="superset-loading-spinner">
+                                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                            </div>
+                            <div class="superset-loading-dots">
+                                <h4 class="text-primary mb-2">🚀 Cargando dashboard</h4>
+                                <div class="loading-progress">
+                                    <div class="loading-dots">
+                                        <span class="dot"></span>
+                                        <span class="dot"></span>
+                                        <span class="dot"></span>
+                                    </div>
+                                    <p class="text-muted mt-2">
+                                        <span t-esc="state.loadingMessage || 'Conectando con Superset...'"/>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                        <h5>Cargando dashboard...</h5>
-                        <p>Esto puede tomar unos segundos</p>
                     </div>
                 </div>
 

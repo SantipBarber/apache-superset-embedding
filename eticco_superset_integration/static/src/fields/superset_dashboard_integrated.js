@@ -19,6 +19,8 @@ export class SupersetDashboardIntegrated extends Component {
         
         this.state = useState({
             isLoading: false,
+            loadingMessage: null,
+            loadingStep: null,
             error: null,
             errorType: null,
             actionRequired: null,
@@ -42,10 +44,8 @@ export class SupersetDashboardIntegrated extends Component {
         // Verificar configuración y auto-seleccionar después del montaje
         await this.initializeConfiguration();
         
-        // Auto-cargar si hay un dashboard válido seleccionado
-        if (this.currentDashboardId && this.isDashboardValid(this.currentDashboardId)) {
-            this.loadDashboard();
-        }
+        // 🚀 Auto-selección inteligente y carga automática
+        await this.performIntelligentAutoSelection();
     }
 
     onPatched() {
@@ -99,6 +99,11 @@ export class SupersetDashboardIntegrated extends Component {
         // Guardar cambios
         await this.props.record.save();
 
+        // 💾 Guardar preferencia del usuario
+        if (this.isDashboardValid(newValue)) {
+            await this.saveLastUsedDashboard(newValue);
+        }
+
         // 🚀 CARGA DIRECTA INMEDIATA (sin esperar onPatched)
         if (this.isDashboardValid(newValue) && !this.state.isLoading) {
             await this.loadDashboard();
@@ -132,10 +137,14 @@ export class SupersetDashboardIntegrated extends Component {
             return;
         }
 
-        this.state.isLoading = true;
-        this.state.error = null;
+        // 🚀 Iniciar carga con feedback progresivo
+        this.setLoadingState(true, '🔍 Verificando configuración...', 1);
 
-        try {            
+        try {
+            // Paso 1: Verificar configuración
+            await this.simulateProgress(300); // Pequeña pausa para UX
+            this.setLoadingState(true, '🔑 Autenticando con Superset...', 2);
+            
             const dashboardData = await this.rpc('/web/dataset/call_kw', {
                 model: this.props.record.resModel,
                 method: 'get_dashboard_data_for_js',
@@ -153,7 +162,12 @@ export class SupersetDashboardIntegrated extends Component {
                 throw errorObj;
             }
 
+            // Paso 2: Obtener datos del dashboard
+            this.setLoadingState(true, '📊 Preparando dashboard...', 3);
             this.state.dashboardData = dashboardData;
+            
+            // Paso 3: Embed dashboard
+            this.setLoadingState(true, '🎨 Renderizando visualización...', 4);
             await this.embedDashboard(dashboardData);
             
             this.state.lastLoadedId = this.currentDashboardId;
@@ -225,8 +239,24 @@ export class SupersetDashboardIntegrated extends Component {
             }
             
         } finally {
-            this.state.isLoading = false;
+            this.setLoadingState(false);
         }
+    }
+
+    setLoadingState(isLoading, message = null, step = null) {
+        this.state.isLoading = isLoading;
+        this.state.loadingMessage = message;
+        this.state.loadingStep = step;
+        
+        if (!isLoading) {
+            this.state.loadingMessage = null;
+            this.state.loadingStep = null;
+        }
+    }
+
+    async simulateProgress(delay = 200) {
+        // Pequeña pausa para mostrar progreso de manera natural
+        return new Promise(resolve => setTimeout(resolve, delay));
     }
 
     async embedDashboard(data) {
@@ -277,6 +307,9 @@ export class SupersetDashboardIntegrated extends Component {
         this.state.errorType = null;
         this.state.actionRequired = null;
         this.state.lastError = null;
+        
+        // Limpiar también los estados de carga
+        this.setLoadingState(false);
     }
 
     async reloadDashboard() {
@@ -417,6 +450,102 @@ export class SupersetDashboardIntegrated extends Component {
         } catch (error) {
             console.error('Error inicializando configuración:', error);
             // No mostrar error al usuario, solo en consola para debug
+        }
+    }
+
+    async performIntelligentAutoSelection() {
+        try {
+            const options = this.getDashboardOptions();
+            const validOptions = options.filter(([key]) => this.isDashboardValid(key));
+            const currentSelection = this.currentDashboardId;
+
+            // Caso 1: Ya hay selección válida - cargar directamente
+            if (currentSelection && this.isDashboardValid(currentSelection)) {
+                console.log('🎯 Dashboard válido ya seleccionado, cargando...');
+                await this.loadDashboard();
+                return;
+            }
+
+            // Caso 2: Solo hay 1 dashboard disponible - auto-seleccionar y cargar
+            if (validOptions.length === 1) {
+                const [dashboardId, dashboardTitle] = validOptions[0];
+                console.log('🚀 Auto-seleccionando único dashboard disponible:', dashboardTitle);
+                
+                // Actualizar selección
+                await this.props.record.update({
+                    [this.props.name]: dashboardId
+                });
+                await this.props.record.save();
+                
+                // Notificar al usuario
+                this.notification.add(
+                    `🎯 Dashboard seleccionado automáticamente: ${dashboardTitle.replace(/^📊\s*/, '')}`,
+                    { type: 'info' }
+                );
+                
+                // Cargar inmediatamente
+                await this.loadDashboard();
+                return;
+            }
+
+            // Caso 3: Múltiples dashboards - verificar preferencia del usuario
+            if (validOptions.length > 1) {
+                const lastUsedDashboard = await this.getLastUsedDashboard();
+                
+                if (lastUsedDashboard && this.isDashboardValid(lastUsedDashboard)) {
+                    // Verificar que el dashboard aún esté disponible
+                    const stillAvailable = validOptions.some(([key]) => key === lastUsedDashboard);
+                    
+                    if (stillAvailable) {
+                        console.log('🔄 Restaurando último dashboard usado:', lastUsedDashboard);
+                        
+                        await this.props.record.update({
+                            [this.props.name]: lastUsedDashboard
+                        });
+                        await this.props.record.save();
+                        
+                        // Cargar silenciosamente sin notificación
+                        await this.loadDashboard();
+                        return;
+                    }
+                }
+                
+                // Sin preferencia previa - mostrar opciones disponibles
+                this.notification.add(
+                    `📋 ${validOptions.length} dashboards disponibles. Selecciona uno para comenzar.`,
+                    { type: 'info', sticky: false }
+                );
+            }
+
+        } catch (error) {
+            console.error('Error en auto-selección inteligente:', error);
+            // Fallar silenciosamente - el usuario puede seleccionar manualmente
+        }
+    }
+
+    async getLastUsedDashboard() {
+        try {
+            // Intentar obtener preferencia del usuario desde localStorage
+            const userId = this.env?.services?.user?.userId || 'default';
+            const storageKey = `superset_last_dashboard_${userId}`;
+            const lastUsed = localStorage.getItem(storageKey);
+            
+            return lastUsed || null;
+        } catch (error) {
+            console.error('Error obteniendo último dashboard usado:', error);
+            return null;
+        }
+    }
+
+    async saveLastUsedDashboard(dashboardId) {
+        try {
+            if (this.isDashboardValid(dashboardId)) {
+                const userId = this.env?.services?.user?.userId || 'default';
+                const storageKey = `superset_last_dashboard_${userId}`;
+                localStorage.setItem(storageKey, dashboardId);
+            }
+        } catch (error) {
+            console.error('Error guardando último dashboard usado:', error);
         }
     }
 }
