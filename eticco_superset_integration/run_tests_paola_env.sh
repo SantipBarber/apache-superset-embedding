@@ -91,7 +91,7 @@ run_docker_tests() {
     cd "$PROJECT_PATH"
     
     # Comando para ejecutar tests dentro del contenedor
-    local test_cmd="python3 -m pytest /mnt/extra-addons/eticco_superset_integration/tests/ -v --tb=short"
+    local test_cmd="python3 -m pytest /opt/odoo/extra_addons/eticco_superset_integration/tests/ -v --tb=short"
     
     echo -e "${BLUE}Comando ejecutado:${NC}"
     echo "docker-compose exec odoo $test_cmd"
@@ -104,7 +104,7 @@ run_docker_tests() {
     else
         # Fallback: intentar con python unittest
         print_step "Reintentando con unittest..."
-        local unittest_cmd="cd /mnt/extra-addons/eticco_superset_integration && python3 -m unittest discover tests/ -v"
+        local unittest_cmd="cd /opt/odoo/extra_addons/eticco_superset_integration && python3 -m unittest discover tests/ -v"
         
         if docker-compose exec -T odoo bash -c "$unittest_cmd"; then
             print_success "Tests ejecutados con unittest"
@@ -122,7 +122,7 @@ run_odoo_internal_tests() {
     cd "$PROJECT_PATH"
     
     # Usar el framework de tests interno de Odoo
-    local odoo_test_cmd="odoo-bin -d $DB_NAME --test-enable --stop-after-init --log-level=info --addons-path=/mnt/extra-addons -i $MODULE_NAME"
+    local odoo_test_cmd="odoo-bin -d $DB_NAME --test-enable --stop-after-init --log-level=info --addons-path=/opt/odoo/extra_addons -i $MODULE_NAME"
     
     echo -e "${BLUE}Comando ejecutado:${NC}"
     echo "docker-compose exec odoo $odoo_test_cmd"
