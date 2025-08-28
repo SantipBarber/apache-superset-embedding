@@ -189,9 +189,7 @@ class PaolaEnvironmentTester:
                         'superset.analytics.hub',
                         'create',
                         {
-                            'name': 'Test Dashboard',
-                            'superset_dashboard_id': '1',
-                            'description': 'Dashboard de prueba'
+                            'display_name': 'Test Dashboard'
                         }
                     ]
                 },
