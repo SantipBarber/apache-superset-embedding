@@ -114,25 +114,42 @@
                 <!-- Empty State -->
                 <div t-else="" class="d-flex align-items-center justify-content-center h-100">
                     <div class="text-center">
-                        <i t-if="!currentDashboardId or currentDashboardId == ''" class="fa fa-arrow-up fa-4x text-muted"></i>
-                        <i t-elif="currentDashboardId == 'no_config'" class="fa fa-exclamation-triangle fa-4x text-warning"></i>
-                        <i t-elif="currentDashboardId == 'no_dashboards'" class="fa fa-info-circle fa-4x text-info"></i>
+                        <!-- Estado: Calculando configuración -->
+                        <div t-if="!props.record.data.has_configuration and (!currentDashboardId or currentDashboardId == '')">
+                            <i class="fa fa-spinner fa-spin fa-4x text-primary"></i>
+                            <h5 class="text-primary mt-3">🔍 Verificando configuración...</h5>
+                            <p class="text-muted">Un momento mientras verificamos la conexión a Superset.</p>
+                        </div>
 
-                        <h5 t-if="!currentDashboardId or currentDashboardId == ''" class="text-muted">Selecciona un dashboard</h5>
-                        <h5 t-elif="currentDashboardId == 'no_config'" class="text-warning">Configuración requerida</h5>
-                        <h5 t-elif="currentDashboardId == 'no_dashboards'" class="text-info">No hay dashboards disponibles</h5>
+                        <!-- Estado: Sin configuración -->
+                        <div t-elif="currentDashboardId == 'no_config'">
+                            <i class="fa fa-exclamation-triangle fa-4x text-warning"></i>
+                            <h5 class="text-warning mt-3">⚙️ Configuración requerida</h5>
+                            <p class="text-warning">
+                                Para usar Analytics necesitas configurar la conexión a Superset.<br/>
+                                Ve a Ajustes → General Settings → Superset Integration
+                            </p>
+                        </div>
 
-                        <p t-if="!currentDashboardId or currentDashboardId == ''" class="text-muted">
-                            Elige un dashboard del menú desplegable.<br/>
-                            Se cargará automáticamente al seleccionarlo.
-                        </p>
-                        <p t-elif="currentDashboardId == 'no_config'" class="text-warning">
-                            Configura la conexión a Superset en Ajustes → General Settings → Superset Integration
-                        </p>
-                        <p t-elif="currentDashboardId == 'no_dashboards'" class="text-info">
-                            No se encontraron dashboards con embedding habilitado.<br/>
-                            Verifica la configuración y que los dashboards tengan embedding activado.
-                        </p>
+                        <!-- Estado: Sin dashboards -->
+                        <div t-elif="currentDashboardId == 'no_dashboards'">
+                            <i class="fa fa-info-circle fa-4x text-info"></i>
+                            <h5 class="text-info mt-3">📊 No hay dashboards disponibles</h5>
+                            <p class="text-info">
+                                No se encontraron dashboards con embedding habilitado.<br/>
+                                Verifica la configuración y que los dashboards tengan embedding activado.
+                            </p>
+                        </div>
+
+                        <!-- Estado: Seleccionar dashboard -->
+                        <div t-else="">
+                            <i class="fa fa-arrow-up fa-4x text-muted"></i>
+                            <h5 class="text-muted mt-3">👆 Selecciona un dashboard</h5>
+                            <p class="text-muted">
+                                Elige un dashboard del menú desplegable.<br/>
+                                Se cargará automáticamente al seleccionarlo.
+                            </p>
+                        </div>
                     </div>
                 </div>
 

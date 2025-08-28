@@ -22,8 +22,8 @@
                             help="Configurar conexión a Superset"/>
                 </div>
 
-                <!-- Contenido sin sheet para aprovechar todo el ancho -->
-                <div invisible="not has_configuration or available_dashboards_count == 0" style="width: 100%;">
+                <!-- Componente siempre presente - maneja estados internamente -->
+                <div style="width: 100%;">
                     <field name="selected_dashboard" 
                            widget="superset_dashboard_integrated" 
                            height="calc(100vh - 200px)"
@@ -33,36 +33,7 @@
                            options="{'no_create': True, 'no_edit': True}"/>
                 </div>
 
-                <div class="alert alert-warning m-3" invisible="has_configuration">
-                    <div class="d-flex align-items-center">
-                        <i class="fa fa-exclamation-triangle fa-2x me-3"></i>
-                        <div>
-                            <h5><strong>Configuración requerida</strong></h5>
-                            <p>Para usar Analytics necesitas configurar la conexión a Superset.</p>
-                            <button name="action_open_settings"
-                                    type="object"
-                                    string="📝 Configurar ahora"
-                                    class="btn btn-primary"/>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="alert alert-info m-3" invisible="not has_configuration or available_dashboards_count > 0">
-                    <div class="d-flex align-items-center">
-                        <i class="fa fa-info-circle fa-2x me-3"></i>
-                        <div>
-                            <h5><strong>No hay dashboards disponibles</strong></h5>
-                            <p>No se encontraron dashboards con embedding habilitado.</p>
-                            <ul>
-                                <li>Verifica que hay dashboards publicados en Superset</li>
-                                <li>Asegúrate de habilitar embedding en los dashboards</li>
-                                <li>Revisa la configuración de conexión</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Campos invisibles -->
+                <!-- Campos invisibles para que el JS tenga acceso -->
                 <field name="available_dashboards_count" invisible="1"/>
                 <field name="dashboard_loaded" invisible="1"/>
                 <field name="has_configuration" invisible="1"/>
