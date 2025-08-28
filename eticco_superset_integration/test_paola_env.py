@@ -254,6 +254,17 @@ class PaolaEnvironmentTester:
                     return False
             else:
                 print("❌ No se pudo crear registro de prueba")
+                print(f"   Respuesta completa: {result}")
+                
+                # Intentar obtener más detalles del error
+                if 'error' in result:
+                    error_info = result['error']
+                    if isinstance(error_info, dict):
+                        print(f"   Tipo error: {error_info.get('name', 'Unknown')}")
+                        print(f"   Mensaje: {error_info.get('message', 'No message')}")
+                        if 'data' in error_info and 'debug' in error_info['data']:
+                            print(f"   Debug: {error_info['data']['debug']}")
+                
                 return False
                 
         except Exception as e:
