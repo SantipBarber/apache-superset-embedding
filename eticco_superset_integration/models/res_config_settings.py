@@ -253,14 +253,14 @@ class ResConfigSettings(models.TransientModel):
        
         try:
             utils = self.env['superset.utils']
-            result = utils.clear_token_cache()
+            result = utils.clear_all_cache()
             
             if result['success']:
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
-                        'title': _('Cache limpiado'),
+                        'title': _('Cache limpio'),
                         'message': result['message'],
                         'type': 'success',
                     }
