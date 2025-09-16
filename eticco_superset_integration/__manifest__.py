@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Superset Integration MVP',
+    'name': 'Superset Integration',
     'version': '17.0.1.1.0',
     'category': 'Tools',
     'summary': 'Integración robusta de Apache Superset en Odoo',
@@ -52,11 +52,11 @@
     
     'assets': {
         'web.assets_backend': [
-            'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.js',
-            'eticco_superset_integration/static/src/fields/superset_dashboard_field.js',
-            'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.xml',
-            'eticco_superset_integration/static/src/fields/superset_dashboard_field.xml',
-            'eticco_superset_integration/static/src/components/superset_dashboard/superset_dashboard.scss',
+            # Estilos específicos para componentes Superset
+            'eticco_superset_integration/static/src/scss/superset_dashboard.scss',
+            # Componente integrado con UX mejorada
+            'eticco_superset_integration/static/src/fields/superset_dashboard_integrated.js',
+            'eticco_superset_integration/static/src/fields/superset_dashboard_integrated.xml',
         ],
     },
     
@@ -67,8 +67,5 @@
     'images': ['static/description/icon.png'],
     'external_dependencies': {
         'python': ['requests'],
-    },
-    
-    'development_status': 'Beta',
-    'maintainers': ['tu_usuario'],
+    }
 }

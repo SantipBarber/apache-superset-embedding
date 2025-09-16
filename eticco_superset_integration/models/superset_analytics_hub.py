@@ -129,57 +129,19 @@ class SupersetAnalyticsHub(models.Model):
         self.current_embedding_uuid = False
         self.current_dashboard_info = ''
 
-    @api.depends()
     def _compute_system_status(self):
-        """Computar estado del sistema"""
+        """Computar estado del sistema usando lógica centralizada optimizada"""
         for record in self:
             try:
                 utils = self.env['superset.utils']
-                config = utils.get_superset_config()
-                record.has_configuration = bool(config.get('url') and config.get('username') and config.get('password'))
+                # Usar método unificado sin forzar refresh (usa cache)
+                status = utils.get_system_status(force_refresh=False)
                 
-                if record.has_configuration:
-                    try:
-                        utils.validate_config(config)
-                        access_token = utils.get_access_token(config)
-                        
-                        dashboards_url = f"{config['url']}/api/v1/dashboard/"
-                        params = {'q': '(page:0,page_size:100)'}
-                        
-                        response = requests.get(
-                            dashboards_url,
-                            params=params,
-                            headers={'Authorization': f'Bearer {access_token}'},
-                            timeout=config.get('timeout', 30)
-                        )
-                        
-                        if response.status_code == 200:
-                            data = response.json()
-                            dashboards = [d for d in data.get('result', []) if d.get('published')]
-                            
-                            embedding_count = 0
-                            for dashboard in dashboards:
-                                try:
-                                    embedding_url = f"{config['url']}/api/v1/dashboard/{dashboard.get('id')}/embedded"
-                                    embedding_response = requests.get(
-                                        embedding_url,
-                                        headers={'Authorization': f'Bearer {access_token}'},
-                                        timeout=config.get('timeout', 30)
-                                    )
-                                    if (embedding_response.status_code == 200 and 
-                                        embedding_response.json().get('result', {}).get('uuid')):
-                                        embedding_count += 1
-                                except:
-                                    pass
-                            
-                            record.available_dashboards_count = embedding_count
-                        else:
-                            record.available_dashboards_count = 0
-                    except:
-                        record.available_dashboards_count = 0
-                else:
-                    record.available_dashboards_count = 0
-            except:
+                record.has_configuration = status.get('has_configuration', False)
+                record.available_dashboards_count = status.get('with_embedding', 0)
+                
+            except Exception as e:
+                _logger.debug('Error calculando estado del sistema: %s', str(e))
                 record.has_configuration = False
                 record.available_dashboards_count = 0
 
@@ -235,23 +197,20 @@ class SupersetAnalyticsHub(models.Model):
                         dashboard_title = dashboard.get('dashboard_title', 'Sin título')
                         dashboard_uuid = dashboard.get('uuid')
                         
+                        # SOLO añadir dashboards que tienen embedding habilitado
                         if embedding_enabled:
-                            selection.append((dashboard_uuid, f"✅ {dashboard_title}"))
-                        else:
-                            selection.append((dashboard_uuid, f"❌ {dashboard_title} (sin embedding)"))
+                            selection.append((dashboard_uuid, f"📊 {dashboard_title}"))
                             
                     except Exception as e:
                         _logger.error('Error verificando embedding para dashboard %s: %s', 
                                     dashboard.get('id'), str(e))
-                        selection.append((
-                            dashboard.get('uuid'),
-                            f"❓ {dashboard.get('dashboard_title', 'Sin título')} (error)"
-                        ))
+                        # No añadir dashboards con errores al selector
                 
                 if not selection:
-                    return [('no_dashboards', '❌ No hay dashboards disponibles')]
+                    return [('no_dashboards', '❌ No hay dashboards con embedding disponibles')]
                     
-                selection.sort(key=lambda x: (not x[1].startswith('✅'), x[1]))
+                # Ordenar por título (todos tienen embedding ya)
+                selection.sort(key=lambda x: x[1])
                 return selection
                 
             except Exception as e:
@@ -342,8 +301,12 @@ class SupersetAnalyticsHub(models.Model):
             'name': 'Configuración Superset',
             'res_model': 'res.config.settings',
             'view_mode': 'form',
-            'target': 'current',
-            'context': {'module': 'eticco_superset_integration'}
+            'target': 'new',  # Cambiar a 'new' para abrir en modal
+            'context': {
+                'module': 'eticco_superset_integration',
+                'default_module': 'eticco_superset_integration',
+                'hub_id': self.id  # Pasar ID del hub para refrescar después
+            }
         }
 
     def get_embedding_url(self):
@@ -356,24 +319,171 @@ class SupersetAnalyticsHub(models.Model):
         return f"/superset/dashboard/{self.current_dashboard_id}"
 
     def get_dashboard_data_for_js(self):
-        """Obtener datos del dashboard para JavaScript/OWL"""
+        """Obtener datos del dashboard para JavaScript/OWL con manejo profesional de errores"""
         self.ensure_one()
         
         if not self.selected_dashboard or self.selected_dashboard in ['no_config', 'no_dashboards', 'error']:
-            return {'error': 'No hay dashboard seleccionado'}
+            return {
+                'error': 'No hay dashboard seleccionado',
+                'error_type': 'selection_error',
+                'user_message': 'Selecciona un dashboard válido del menú desplegable'
+            }
             
         try:
-            self._compute_dashboard_info()
-            
+            # Obtener configuración
             utils = self.env['superset.utils']
             config = utils.get_superset_config()
             utils.validate_config(config)
             
-            if not all([self.current_dashboard_id, self.selected_dashboard, self.current_embedding_uuid]):
-                return {'error': 'Datos de dashboard incompletos'}
+            # Obtener token con manejo de errores específicos
+            try:
+                access_token = utils.get_access_token(config)
+            except Exception as auth_error:
+                error_msg = str(auth_error)
+                if '401' in error_msg or 'Unauthorized' in error_msg:
+                    return {
+                        'error': 'Credenciales incorrectas o expiradas',
+                        'error_type': 'auth_error',
+                        'user_message': 'Las credenciales de Superset han caducado o son incorrectas. Verifica la configuración en Ajustes.',
+                        'action_required': 'check_credentials'
+                    }
+                elif '403' in error_msg or 'Forbidden' in error_msg:
+                    return {
+                        'error': 'Sin permisos suficientes',
+                        'error_type': 'permission_error',
+                        'user_message': 'El usuario no tiene permisos para acceder a Superset. Contacta al administrador.',
+                        'action_required': 'contact_admin'
+                    }
+                else:
+                    return {
+                        'error': 'Error de autenticación',
+                        'error_type': 'auth_error', 
+                        'user_message': 'No se pudo autenticar con Superset. Verifica que el servidor esté funcionando.',
+                        'action_required': 'check_connection'
+                    }
             
-            access_token = utils.get_access_token(config)
+            # Buscar el dashboard con manejo de errores de conectividad
+            dashboards_url = f"{config['url']}/api/v1/dashboard/"
+            params = {'q': '(page:0,page_size:100)'}
             
+            try:
+                response = requests.get(
+                    dashboards_url,
+                    params=params,
+                    headers={'Authorization': f'Bearer {access_token}'},
+                    timeout=config.get('timeout', 30)
+                )
+            except requests.exceptions.ConnectionError:
+                return {
+                    'error': 'Servidor no disponible',
+                    'error_type': 'connection_error',
+                    'user_message': 'No se puede conectar al servidor de Superset. Verifica que esté en línea y accesible.',
+                    'action_required': 'check_server'
+                }
+            except requests.exceptions.Timeout:
+                return {
+                    'error': 'Timeout de conexión',
+                    'error_type': 'timeout_error',
+                    'user_message': 'El servidor de Superset no responde. El servidor puede estar sobrecargado.',
+                    'action_required': 'retry_later'
+                }
+            except requests.exceptions.RequestException as req_error:
+                return {
+                    'error': 'Error de red',
+                    'error_type': 'network_error',
+                    'user_message': f'Error de conectividad: {str(req_error)[:100]}...',
+                    'action_required': 'check_network'
+                }
+            
+            if response.status_code == 401:
+                return {
+                    'error': 'Token expirado',
+                    'error_type': 'token_expired',
+                    'user_message': 'La sesión ha caducado. Intenta recargar la página.',
+                    'action_required': 'refresh_page'
+                }
+            elif response.status_code == 403:
+                return {
+                    'error': 'Sin permisos',
+                    'error_type': 'permission_denied',
+                    'user_message': 'Sin permisos para acceder a los dashboards. Contacta al administrador.',
+                    'action_required': 'contact_admin'
+                }
+            elif response.status_code == 500:
+                return {
+                    'error': 'Error del servidor',
+                    'error_type': 'server_error',
+                    'user_message': 'Error interno del servidor de Superset. Intenta más tarde.',
+                    'action_required': 'retry_later'
+                }
+            elif response.status_code != 200:
+                return {
+                    'error': f'Error HTTP {response.status_code}',
+                    'error_type': 'http_error',
+                    'user_message': f'El servidor respondió con error {response.status_code}. Intenta más tarde.',
+                    'action_required': 'retry_later'
+                }
+            
+            data = response.json()
+            dashboards = data.get('result', [])
+            
+            # Buscar el dashboard por UUID
+            dashboard = None
+            for d in dashboards:
+                if d.get('uuid') == self.selected_dashboard:
+                    dashboard = d
+                    break
+                    
+            if not dashboard:
+                return {
+                    'error': 'Dashboard no encontrado',
+                    'error_type': 'dashboard_not_found',
+                    'user_message': 'El dashboard seleccionado ya no existe o no es accesible.',
+                    'action_required': 'select_different'
+                }
+            
+            # Obtener embedding UUID con manejo de errores
+            embedding_url = f"{config['url']}/api/v1/dashboard/{dashboard.get('id')}/embedded"
+            
+            try:
+                embedding_response = requests.get(
+                    embedding_url,
+                    headers={'Authorization': f'Bearer {access_token}'},
+                    timeout=config.get('timeout', 30)
+                )
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as conn_error:
+                return {
+                    'error': 'Error verificando embedding',
+                    'error_type': 'embedding_check_error',
+                    'user_message': 'No se pudo verificar si el dashboard tiene embedding habilitado.',
+                    'action_required': 'retry'
+                }
+            
+            if embedding_response.status_code != 200:
+                return {
+                    'error': 'Dashboard sin embedding',
+                    'error_type': 'embedding_disabled',
+                    'user_message': 'Este dashboard no tiene embedding habilitado. Contacta al administrador.',
+                    'action_required': 'contact_admin'
+                }
+            
+            embedding_data = embedding_response.json()
+            embedding_uuid = embedding_data.get('result', {}).get('uuid')
+            
+            if not embedding_uuid:
+                return {
+                    'error': 'UUID de embedding no disponible',
+                    'error_type': 'embedding_uuid_missing',
+                    'user_message': 'El dashboard no está correctamente configurado para embedding.',
+                    'action_required': 'contact_admin'
+                }
+            
+            # Actualizar campos del record
+            self.current_dashboard_id = dashboard.get('id')
+            self.current_dashboard_title = dashboard.get('dashboard_title', 'Sin título')
+            self.current_embedding_uuid = embedding_uuid
+            
+            # Generar guest token con manejo de errores
             guest_token_url = f"{config['url']}/api/v1/security/guest_token/"
             guest_data = {
                 'user': {
@@ -383,49 +493,154 @@ class SupersetAnalyticsHub(models.Model):
                 },
                 'resources': [{
                     'type': 'dashboard',
-                    'id': self.current_embedding_uuid
+                    'id': embedding_uuid
                 }],
                 'rls': []
             }
             
-            response = requests.post(
-                guest_token_url,
-                json=guest_data,
-                headers={
-                    'Authorization': f'Bearer {access_token}',
-                    'Content-Type': 'application/json'
-                },
-                timeout=config.get('timeout', 30)
-            )
+            try:
+                token_response = requests.post(
+                    guest_token_url,
+                    json=guest_data,
+                    headers={
+                        'Authorization': f'Bearer {access_token}',
+                        'Content-Type': 'application/json'
+                    },
+                    timeout=config.get('timeout', 30)
+                )
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+                return {
+                    'error': 'Error generando token de acceso',
+                    'error_type': 'guest_token_error',
+                    'user_message': 'No se pudo generar el token de acceso. El servidor puede estar sobrecargado.',
+                    'action_required': 'retry_later'
+                }
             
-            if response.status_code != 200:
-                error_data = response.json() if response.content else {}
-                return {'error': f'Error generando guest token: {error_data}'}
+            if token_response.status_code != 200:
+                error_detail = ''
+                try:
+                    error_data = token_response.json()
+                    error_detail = error_data.get('message', '')
+                except:
+                    error_detail = f'HTTP {token_response.status_code}'
+                
+                return {
+                    'error': 'Error de autorización',
+                    'error_type': 'guest_token_failed',
+                    'user_message': f'No se pudo autorizar el acceso al dashboard: {error_detail}',
+                    'action_required': 'contact_admin'
+                }
             
-            guest_token = response.json().get('token')
+            guest_token = token_response.json().get('token')
             
             if not guest_token:
-                return {'error': 'No se pudo obtener guest token'}
+                return {
+                    'error': 'Token de acceso inválido',
+                    'error_type': 'invalid_guest_token',
+                    'user_message': 'No se pudo obtener un token válido para acceder al dashboard.',
+                    'action_required': 'retry'
+                }
             
             self.dashboard_loaded = True
             
             return {
-                'embedding_uuid': self.current_embedding_uuid,
+                'embedding_uuid': embedding_uuid,
                 'guest_token': guest_token,
                 'superset_domain': config['url'],
-                'dashboard_title': self.current_dashboard_title,
-                'dashboard_id': self.current_dashboard_id,
-                'debug_mode': config.get('debug_mode', False)
+                'dashboard_title': dashboard.get('dashboard_title', 'Sin título'),
+                'dashboard_id': dashboard.get('id'),
+                'debug_mode': config.get('debug_mode', False),
+                'success': True
             }
             
+        except ValidationError as val_error:
+            return {
+                'error': 'Error de configuración',
+                'error_type': 'config_error',
+                'user_message': f'Configuración inválida: {str(val_error)}',
+                'action_required': 'check_config'
+            }
         except Exception as e:
             _logger.error('Error inesperado obteniendo datos para JS: %s', str(e))
-            return {'error': f'Error inesperado: {str(e)}'}
+            return {
+                'error': 'Error interno',
+                'error_type': 'unexpected_error',
+                'user_message': 'Ha ocurrido un error inesperado. Intenta recargar la página.',
+                'action_required': 'reload_page',
+                'technical_details': str(e) if self.env.user.has_group('base.group_system') else None
+            }
 
+    def refresh_dashboard_options(self):
+        """Refrescar opciones de dashboard (método público para llamadas desde JS)"""
+        self.ensure_one()
+        
+        _logger.info('🔍 [TIMING] refresh_dashboard_options() - has_configuration inicial: %s', self.has_configuration)
+        
+        # Forzar recálculo de campos computados
+        self._compute_system_status()
+        
+        _logger.info('✅ [TIMING] refresh_dashboard_options() - has_configuration después: %s', self.has_configuration)
+        
+        # Forzar la re-evaluación de las opciones de dashboard
+        options = self._get_dashboard_selection()
+        valid_count = len([opt for opt in options if opt[0] not in ['no_config', 'no_dashboards', 'error']])
+        
+        result = {
+            'options_refreshed': True,
+            'available_options': valid_count,
+            'has_configuration': self.has_configuration,
+            'configuration_status': 'configured' if self.has_configuration else 'missing'
+        }
+        
+        return result
+
+    def force_refresh_configuration(self):
+        """Método público para forzar recálculo completo desde configuración"""
+        self.ensure_one()
+        
+        try:
+            # Forzar recálculo completo con HTTP
+            utils = self.env['superset.utils']
+            status = utils.get_system_status(force_refresh=True)
+            
+            # Actualizar campos inmediatamente
+            self.has_configuration = status.get('has_configuration', False)
+            self.available_dashboards_count = status.get('with_embedding', 0)
+            
+            # Limpiar selección si no hay configuración válida
+            if not self.has_configuration:
+                self.selected_dashboard = False
+                self.dashboard_loaded = False
+                self._reset_dashboard_info()
+            
+            _logger.info(f"Configuración actualizada: has_configuration={self.has_configuration}, "
+                        f"dashboards_count={self.available_dashboards_count}")
+            
+        except Exception as e:
+            _logger.error('Error forzando refresh de configuración: %s', str(e))
+            self.has_configuration = False
+            self.available_dashboards_count = 0
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
+    
     @api.model
     def get_default_hub(self):
         """Obtener o crear hub por defecto"""
         hub = self.search([], limit=1)
+        
         if not hub:
             hub = self.create({})
+            _logger.info('🔍 [TIMING] get_default_hub() - Hub creado con ID: %s', hub.id)
+        else:
+            _logger.info('🔍 [TIMING] get_default_hub() - Hub existente ID: %s, has_configuration: %s', 
+                        hub.id, hub.has_configuration)
+        
+        # Forzar el cálculo de campos computados para el hub
+        hub._compute_system_status()
+        
+        _logger.info('✅ [TIMING] get_default_hub() - Después del cálculo has_configuration: %s', hub.has_configuration)
+        
         return hub

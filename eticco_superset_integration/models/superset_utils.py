@@ -8,6 +8,35 @@ import time
 
 _logger = logging.getLogger(__name__)
 
+# Cache global para tokens y estado del sistema
+_SUPERSET_CACHE = {}
+
+def cache_result(cache_key_func, duration=300):
+    """Decorador para cachear resultados en memoria global"""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            # Generar cache key
+            if callable(cache_key_func):
+                cache_key = cache_key_func(self, *args, **kwargs)
+            else:
+                cache_key = cache_key_func
+                
+            # Verificar cache
+            cache_entry = _SUPERSET_CACHE.get(cache_key)
+            if cache_entry and cache_entry['expires'] > time.time():
+                return cache_entry['data']
+            
+            # Ejecutar función y cachear resultado
+            result = func(self, *args, **kwargs)
+            _SUPERSET_CACHE[cache_key] = {
+                'data': result,
+                'expires': time.time() + duration
+            }
+            return result
+        return wrapper
+    return decorator
+
 
 class SupersetUtils(models.AbstractModel):
     """Utilidades comunes para integración con Superset"""
@@ -55,7 +84,6 @@ class SupersetUtils(models.AbstractModel):
             
         return True
 
-
     @api.model
     def get_access_token(self, config=None, force_refresh=False):
         """Obtener token de acceso con cache inteligente"""
@@ -79,25 +107,21 @@ class SupersetUtils(models.AbstractModel):
         return token
 
     def _get_cached_token(self, cache_key):
-        """Obtener token del cache"""
+        """Obtener token del cache global"""
         try:
-            if hasattr(self, '_token_cache'):
-                cache_entry = self._token_cache.get(cache_key)
-                if cache_entry and cache_entry['expires'] > time.time():
-                    return cache_entry['token']
+            cache_entry = _SUPERSET_CACHE.get(cache_key)
+            if cache_entry and cache_entry['expires'] > time.time():
+                return cache_entry['token']
         except Exception as e:
             _logger.debug('Error obteniendo token del cache: %s', str(e))
         return None
 
     def _cache_token(self, cache_key, token):
-        """Guardar token en cache"""
+        """Guardar token en cache global"""
         try:
-            if not hasattr(self, '_token_cache'):
-                self._token_cache = {}
-            
-            self._token_cache[cache_key] = {
+            _SUPERSET_CACHE[cache_key] = {
                 'token': token,
-                'expires': time.time() + 240
+                'expires': time.time() + 240  # 4 minutos
             }
         except Exception as e:
             _logger.debug('Error guardando token en cache: %s', str(e))
@@ -223,11 +247,23 @@ class SupersetUtils(models.AbstractModel):
     def clear_token_cache(self):
         """Limpiar cache de tokens"""
         try:
-            if hasattr(self, '_token_cache'):
-                self._token_cache.clear()
-            return {'success': True, 'message': _('Cache limpiado')}
+            # Limpiar solo tokens, mantener otros caches
+            keys_to_remove = [k for k in _SUPERSET_CACHE.keys() if k.startswith('superset_token_')]
+            for key in keys_to_remove:
+                _SUPERSET_CACHE.pop(key, None)
+            return {'success': True, 'message': _('Cache de tokens limpiado')}
         except Exception as e:
             _logger.error('Error limpiando cache: %s', str(e))
+            return {'success': False, 'message': str(e)}
+
+    @api.model
+    def clear_all_cache(self):
+        """Limpiar todo el cache"""
+        try:
+            _SUPERSET_CACHE.clear()
+            return {'success': True, 'message': _('Cache completo limpiado')}
+        except Exception as e:
+            _logger.error('Error limpiando cache completo: %s', str(e))
             return {'success': False, 'message': str(e)}
 
     @api.model
@@ -288,3 +324,107 @@ class SupersetUtils(models.AbstractModel):
             raise ValidationError(_('Dashboard "%s" no tiene UUID de embedding') % dashboard_data.get('title'))
             
         return True
+    
+    @api.model
+    def is_configured(self):
+        """Verificar si Superset está configurado (sin hacer peticiones HTTP)"""
+        try:
+            config = self.get_superset_config()
+            return bool(config.get('url') and config.get('username') and config.get('password'))
+        except:
+            return False
+    
+    @cache_result(lambda self, force_refresh: f"system_status_{force_refresh}", duration=300)
+    def get_system_status(self, force_refresh=False):
+        """Obtener estado del sistema de forma unificada y optimizada"""
+        # Verificación básica primero (sin HTTP)
+        if not self.is_configured():
+            return {
+                'has_configuration': False,
+                'connection_status': 'Configuración incompleta',
+                'total_dashboards': 0,
+                'with_embedding': 0,
+                'last_check': None
+            }
+        
+        # Si force_refresh es True, limpiar cache antes de continuar
+        if force_refresh:
+            cache_key = f"system_status_{force_refresh}"
+            _SUPERSET_CACHE.pop(cache_key, None)
+        
+        # Calcular estado completo con HTTP (solo si es necesario)
+        try:
+            config = self.get_superset_config()
+            self.validate_config(config)
+            
+            # Verificar conectividad básica
+            access_token = self.get_access_token(config)
+            
+            # Obtener estadísticas de dashboards
+            dashboards_url = f"{config['url']}/api/v1/dashboard/"
+            params = {'q': '(page:0,page_size:100)'}
+            
+            response = requests.get(
+                dashboards_url,
+                params=params,
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=config.get('timeout', 30)
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                dashboards = [d for d in data.get('result', []) if d.get('published')]
+                
+                # Contar dashboards con embedding
+                embedding_count = 0
+                for dashboard in dashboards:
+                    try:
+                        embedding_url = f"{config['url']}/api/v1/dashboard/{dashboard.get('id')}/embedded"
+                        embedding_response = requests.get(
+                            embedding_url,
+                            headers={'Authorization': f'Bearer {access_token}'},
+                            timeout=config.get('timeout', 30)
+                        )
+                        if (embedding_response.status_code == 200 and 
+                            embedding_response.json().get('result', {}).get('uuid')):
+                            embedding_count += 1
+                    except:
+                        pass
+                
+                status = {
+                    'has_configuration': True,
+                    'connection_status': 'Conectado correctamente',
+                    'total_dashboards': len(dashboards),
+                    'with_embedding': embedding_count,
+                    'last_check': time.time()
+                }
+            else:
+                status = {
+                    'has_configuration': True,
+                    'connection_status': f'Error HTTP {response.status_code}',
+                    'total_dashboards': 0,
+                    'with_embedding': 0,
+                    'last_check': time.time()
+                }
+                
+        except Exception as e:
+            _logger.debug('Error verificando conexión con Superset: %s', str(e))
+            status = {
+                'has_configuration': True,
+                'connection_status': f'Error de conexión: {str(e)[:50]}...',
+                'total_dashboards': 0,
+                'with_embedding': 0,
+                'last_check': time.time()
+            }
+        
+        return status
+    
+    @api.model  
+    def get_dashboard_stats_cached(self):
+        """Compatibilidad: obtener solo stats de dashboards"""
+        status = self.get_system_status()
+        return {
+            'has_configuration': status['has_configuration'],
+            'total_dashboards': status['total_dashboards'],
+            'with_embedding': status['with_embedding']
+        }
