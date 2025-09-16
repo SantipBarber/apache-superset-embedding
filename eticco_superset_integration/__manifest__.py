@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Superset Integration MVP',
+    'name': 'Superset Integration',
     'version': '17.0.1.1.0',
     'category': 'Tools',
     'summary': 'Integración robusta de Apache Superset en Odoo',
@@ -67,8 +67,5 @@
     'images': ['static/description/icon.png'],
     'external_dependencies': {
         'python': ['requests'],
-    },
-    
-    'development_status': 'Beta',
-    'maintainers': ['tu_usuario'],
+    }
 }
