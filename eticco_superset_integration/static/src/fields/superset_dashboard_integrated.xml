@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="eticco_superset_integration.SupersetDashboardIntegratedTemplate">
+        <div class="o_field_superset_dashboard_integrated" t-att-class="props.class">
+
+            <!-- Selector de Dashboard -->
+            <div class="superset_selector">
+                <div class="row align-items-center g-2">
+                    <div class="col-auto">
+                        <label class="form-label">
+                            <i class="fa fa-dashboard"></i>
+                            Dashboard:
+                        </label>
+                    </div>
+                    <div class="col">
+                        <select class="form-select" t-att-name="props.name" t-att-value="currentDashboardId" t-on-change="onDashboardSelectionChange">
+                            <option value="">-- Selecciona un dashboard --</option>
+                            <t t-foreach="getDashboardOptions()" t-as="option" t-key="option[0]">
+                                <option t-att-value="option[0]" t-esc="option[1]">
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <!-- Estado del Dashboard -->
+                        <span t-if="state.isLoading" class="badge bg-primary">
+                            <i class="fa fa-spinner fa-spin"></i>
+                            Cargando...
+                        </span>
+                        <span t-elif="state.error" class="badge bg-danger">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            Error
+                        </span>
+                        <span t-elif="isCurrentDashboardLoaded" class="badge bg-success">
+                            <i class="fa fa-check-circle"></i>
+                            Activo
+                        </span>
+                        <span t-elif="isDashboardValid(currentDashboardId)" class="badge bg-warning">
+                            <i class="fa fa-clock-o"></i>
+                            Cargando...
+                        </span>
+                        <small t-else="" class="text-muted">
+                            <i class="fa fa-info-circle"></i>
+                            <span t-esc="getLoadingMessage()"/>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenedor del Dashboard -->
+            <div class="superset_dashboard_container" t-att-style="'height: ' + props.height">
+
+                <!-- Dashboard Embebido -->
+                <div t-if="isDashboardValid(currentDashboardId) and !state.error" class="h-100 w-100" t-ref="dashboardContainer">
+                    <!-- El dashboard se monta aquí via JavaScript -->
+                </div>
+
+                <!-- Loading State -->
+                <div t-elif="state.isLoading" class="d-flex align-items-center justify-content-center h-100">
+                    <div class="text-center">
+                        <div class="superset-loading-container" t-att-data-step="state.loadingStep || 1">
+                            <div class="superset-loading-spinner">
+                                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                            </div>
+                            <div class="superset-loading-dots">
+                                <h4 class="text-primary mb-2">🚀 Cargando dashboard</h4>
+                                <div class="loading-progress">
+                                    <div class="loading-dots">
+                                        <span class="dot"></span>
+                                        <span class="dot"></span>
+                                        <span class="dot"></span>
+                                    </div>
+                                    <p class="text-muted mt-2">
+                                        <span t-esc="state.loadingMessage || 'Conectando con Superset...'"/>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div t-elif="state.error" class="d-flex align-items-center justify-content-center h-100">
+                    <div class="text-center">
+                        <i class="fa fa-exclamation-triangle fa-4x text-danger"></i>
+                        <h5 class="text-danger">Error cargando dashboard</h5>
+                        <p class="text-muted" t-esc="state.error"/>
+                        
+                        <!-- Botón de acción contextual según tipo de error -->
+                        <t t-if="getActionButton()">
+                            <button t-att-class="'btn ' + getActionButton().class" t-on-click="getActionButton().action">
+                                <span t-esc="getActionButton().text"/>
+                            </button>
+                        </t>
+                        <t t-else="">
+                            <button class="btn btn-outline-primary" t-on-click="reloadDashboard">
+                                <i class="fa fa-refresh"></i>
+                                Intentar de nuevo
+                            </button>
+                        </t>
+                        
+                        <!-- Información adicional si hay acción requerida -->
+                        <div t-if="state.actionRequired" class="mt-3">
+                            <small class="text-muted">
+                                <i class="fa fa-info-circle"></i>
+                                <span t-esc="getLoadingMessage()"/>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div t-else="" class="d-flex align-items-center justify-content-center h-100">
+                    <div class="text-center">
+                        <!-- Estado: Calculando configuración -->
+                        <div t-if="!props.record.data.has_configuration and (!currentDashboardId or currentDashboardId == '')">
+                            <i class="fa fa-spinner fa-spin fa-4x text-primary"></i>
+                            <h5 class="text-primary mt-3">🔍 Verificando configuración...</h5>
+                            <p class="text-muted">Un momento mientras verificamos la conexión a Superset.</p>
+                        </div>
+
+                        <!-- Estado: Sin configuración -->
+                        <div t-elif="currentDashboardId == 'no_config'">
+                            <i class="fa fa-exclamation-triangle fa-4x text-warning"></i>
+                            <h5 class="text-warning mt-3">⚙️ Configuración requerida</h5>
+                            <p class="text-warning">
+                                Para usar Analytics necesitas configurar la conexión a Superset.<br/>
+                                Ve a Ajustes → General Settings → Superset Integration
+                            </p>
+                        </div>
+
+                        <!-- Estado: Sin dashboards -->
+                        <div t-elif="currentDashboardId == 'no_dashboards'">
+                            <i class="fa fa-info-circle fa-4x text-info"></i>
+                            <h5 class="text-info mt-3">📊 No hay dashboards disponibles</h5>
+                            <p class="text-info">
+                                No se encontraron dashboards con embedding habilitado.<br/>
+                                Verifica la configuración y que los dashboards tengan embedding activado.
+                            </p>
+                        </div>
+
+                        <!-- Estado: Seleccionar dashboard -->
+                        <div t-else="">
+                            <i class="fa fa-arrow-up fa-4x text-muted"></i>
+                            <h5 class="text-muted mt-3">👆 Selecciona un dashboard</h5>
+                            <p class="text-muted">
+                                Elige un dashboard del menú desplegable.<br/>
+                                Se cargará automáticamente al seleccionarlo.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </t>
+</templates>

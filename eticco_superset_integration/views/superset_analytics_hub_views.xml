@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_superset_analytics_hub_form" model="ir.ui.view">
+        <field name="name">superset.analytics.hub.form</field>
+        <field name="model">superset.analytics.hub</field>
+        <field name="arch" type="xml">
+            <form string="Analytics Dashboard" create="false" edit="false" delete="false">
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_refresh_dashboards"
+                            type="object"
+                            string="🔄 Actualizar"
+                            class="oe_stat_button"
+                            icon="fa-refresh"
+                            help="Refrescar lista de dashboards"/>
+                    
+                    <button name="action_open_settings"
+                            type="object"
+                            string="⚙️ Configurar"
+                            class="oe_stat_button"
+                            icon="fa-cog"
+                            invisible="has_configuration"
+                            help="Configurar conexión a Superset"/>
+                </div>
+
+                <!-- Componente siempre presente - maneja estados internamente -->
+                <div style="width: 100%;">
+                    <field name="selected_dashboard" 
+                           widget="superset_dashboard_integrated" 
+                           height="calc(100vh - 200px)"
+                           nolabel="1"
+                           class="w-100"
+                           style="width: 100%;"
+                           options="{'no_create': True, 'no_edit': True}"/>
+                </div>
+
+                <!-- Campos invisibles para que el JS tenga acceso -->
+                <field name="available_dashboards_count" invisible="1"/>
+                <field name="dashboard_loaded" invisible="1"/>
+                <field name="has_configuration" invisible="1"/>
+                <field name="current_dashboard_id" invisible="1"/>
+                <field name="current_embedding_uuid" invisible="1"/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_superset_analytics_hub" model="ir.actions.act_window">
+        <field name="name">Analytics</field>
+        <field name="res_model">superset.analytics.hub</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="view_id" ref="view_superset_analytics_hub_form"/>
+        <field name="context">{'form_view_ref': 'eticco_superset_integration.view_superset_analytics_hub_form'}</field>
+    </record>
+
+    <!-- Acción personalizada que siempre usa get_default_hub -->
+    <record id="action_superset_analytics_hub_smart" model="ir.actions.server">
+        <field name="name">Analytics Dashboard</field>
+        <field name="model_id" ref="model_superset_analytics_hub"/>
+        <field name="state">code</field>
+        <field name="code">
+# Obtener o crear hub por defecto
+hub = model.get_default_hub()
+
+# Abrir formulario del hub
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Analytics',
+    'res_model': 'superset.analytics.hub',
+    'view_mode': 'form',
+    'target': 'current',
+    'res_id': hub.id,
+    'view_id': env.ref('eticco_superset_integration.view_superset_analytics_hub_form').id,
+    'context': {'form_view_ref': 'eticco_superset_integration.view_superset_analytics_hub_form'}
+}
+        </field>
+    </record>
+
+    <!-- Mantener la acción original como act_window para compatibilidad -->
+    <record id="action_superset_analytics_hub_menu" model="ir.actions.act_window">
+        <field name="name">Analytics Dashboard</field>
+        <field name="res_model">superset.analytics.hub</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+
+</odoo>

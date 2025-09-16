@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <record id="superset_config_url_default" model="ir.config_parameter" >
+            <field name="key">superset.url</field>
+            <field name="value">http://192.168.30.200:8088</field>
+        </record>
+        
+        <record id="superset_config_username_default" model="ir.config_parameter">
+            <field name="key">superset.username</field>
+            <field name="value">admin</field>
+        </record>
+        
+        <record id="superset_config_password_default" model="ir.config_parameter">
+            <field name="key">superset.password</field>
+            <field name="value">admin</field>
+        </record>
+        
+        <record id="superset_config_timeout_default" model="ir.config_parameter">
+            <field name="key">superset.timeout</field>
+            <field name="value">30</field>
+        </record>
+        
+        <record id="superset_config_cache_tokens_default" model="ir.config_parameter">
+            <field name="key">superset.cache_tokens</field>
+            <field name="value">True</field>
+        </record>
+        
+        <record id="superset_config_debug_mode_default" model="ir.config_parameter">
+            <field name="key">superset.debug_mode</field>
+            <field name="value">False</field>
+        </record>
+        
+        <record id="superset_config_menu_name_default" model="ir.config_parameter">
+            <field name="key">superset.menu_name</field>
+            <field name="value">Analytics</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,140 +1,109 @@
-# 📊 Apache Superset Embedding - Guía Completa
+# Integración de Apache Superset Embedding
 
-## 📄 Descripción
+Una colección completa de herramientas y ejemplos para incrustar dashboards de Apache Superset en aplicaciones externas usando el SDK oficial de embedding.
 
-Proyecto **100% funcional** para integrar **Apache Superset** en aplicaciones web usando iframes con autenticación transparente mediante guest tokens.
+## Descripción General
 
-## ✅ Estado: COMPLETAMENTE OPERATIVO
+Este repositorio proporciona soluciones listas para producción para integrar dashboards de Apache Superset en tus aplicaciones mediante iframe embedding con autenticación automática y descubrimiento dinámico de dashboards.
+
+## Estado: COMPLETAMENTE OPERATIVO
 
 - ✅ **Integración funcionando** - Dashboards embebidos en aplicación externa
-- ✅ **CORS configurado** - Conexión desde aplicación verificada
+- ✅ **CORS configurado** - Conexión desde aplicación verificada  
 - ✅ **Guest tokens funcionando** - Autenticación automática operativa
-- ✅ **3 dashboards listos** - Con embedding habilitado
 - ✅ **Scripts automatizados** - Para replicar fácilmente
+- ✅ **Detección dinámica** - Descubrimiento automático de dashboards
 
-## 🔧 Configuración Inicial Obligatoria
+## Configuración Inicial Requerida
 
-### Antes de Instalar
+### Configuración de Superset
 
-**⚠️ Es OBLIGATORIO personalizar estos archivos antes de usar:**
+**⚠️ Es necesario configurar estos elementos antes de usar:**
 
-1. **`superset_config_docker.py`**
+1. **`superset_config_docker.py`** (si usas Docker) o **`superset_config.py`** (instalación manual)
    ```python
-   # Cambiar por tu clave secreta única
-   GUEST_TOKEN_JWT_SECRET = "TU-CLAVE-SECRETA-AQUI-MINIMO-32-CARACTERES"
+   # Cambiar por tu clave secreta única (mínimo 32 caracteres)
+   GUEST_TOKEN_JWT_SECRET = "tu-clave-secreta-aqui-minimo-32-caracteres"
    
-   # Agregar tu IP local en CORS_OPTIONS
-   "http://TU-IP-LOCAL:8080", "http://TU-IP-LOCAL:8080/",
+   # Configurar CORS para permitir conexiones desde tu aplicación
+   "origins": [
+       "http://localhost:8080", "http://localhost:8080/",
+       "http://127.0.0.1:8080", "http://127.0.0.1:8080/",
+       # Se pueden agregar más dominios según necesidad
+   ]
    ```
 
-2. **`setup_embedding_working.sh`**
+2. **`setup_embedding_working.sh`** (opcional, para automatización)
    ```bash
-   SUPERSET_URL="http://TU-IP-LOCAL:8088"  # Tu IP de Superset
+   # Ajustar según tu instalación de Superset
+   SUPERSET_URL="http://localhost:8088"
    ```
 
-3. **`test_final.sh`**
-   ```bash
-   SUPERSET_URL="http://TU-IP-LOCAL:8088"    # Tu IP de Superset
-   APP_URL="http://TU-IP-LOCAL:8080"         # Tu IP aplicación
-   TEST_UUID="TU-UUID-OBTENIDO-DE-SUPERSET"  # UUID real
-   ```
+### Aplicación Principal
 
-4. **`iframe-example.html`**
-   ```javascript
-   const SUPERSET_URL = 'http://TU-IP-LOCAL:8088';  // Tu IP de Superset
-   
-   // Reemplazar UUIDs de ejemplo con los reales
-   let dashboards = [
-       { id: "TU-UUID-REAL", dashboard_title: "Tu Dashboard" }
-   ];
-   ```
+**`generic_superset_embedder.html`** - No requiere configuración previa:
+- Configuración dinámica de URL desde la interfaz
+- Detección automática de entorno
+- Configuración de credenciales en tiempo real
 
-### 💡 Cómo Obtener tu IP Local
+## Instalación Completa (15 minutos)
+
+### Opción 1: Instalación con Docker (Recomendado)
 
 ```bash
-# En Linux/Mac
-ifconfig | grep "inet " | grep -v 127.0.0.1
-
-# En Windows
-ipconfig
-```
-
----
-
-## 🚀 Instalación Completa (10 minutos)
-
-### 1. Preparar Superset
-
-```bash
-# Clonar repositorio oficial
+# 1. Clonar repositorio oficial de Superset
 git clone https://github.com/apache/superset.git
 cd superset
 
-# Copiar configuración de embedding
+# 2. Copiar configuración de embedding (si tienes los archivos)
 cp ../superset_config_docker.py docker/pythonpath_dev/
 cp ../docker-compose-non-dev.yml .
 
-# Iniciar Superset
+# 3. Iniciar Superset
 docker-compose -f docker-compose-non-dev.yml up -d
 
-# Verificar funcionamiento (esperar 2-3 minutos)
+# 4. Verificar funcionamiento (esperar 2-3 minutos)
 curl http://localhost:8088/health  # Debe devolver "OK"
 ```
 
-### 2. Habilitar Embedding (Manual en Interfaz)
-
-1. **Ir a Superset**: http://localhost:8088 (admin/admin)
-2. **Abrir dashboard** → **Settings** → **Embed dashboard**
-3. **Agregar dominios**:
-   - `http://localhost:8080`
-   - `http://127.0.0.1:8080`
-4. **Copiar UUID** que aparece (ej: `abc12345-6789-0123-4567-890abcdef123`)
-5. **Actualizar** `iframe-example.html` con el UUID obtenido
-
-### 3. Probar Aplicación
+### Opción 2: Instalación Manual
 
 ```bash
-# Iniciar servidor web
-python3 -m http.server 8080
+# 1. Instalar Superset
+pip install apache-superset
 
-# Abrir navegador en: http://localhost:8080/iframe-example.html
+# 2. Inicializar base de datos
+superset db upgrade
+
+# 3. Crear usuario admin
+superset fab create-admin
+
+# 4. Cargar ejemplos (opcional)
+superset load_examples
+
+# 5. Inicializar Superset
+superset init
+
+# 6. Configurar archivo de configuración
+# Crear superset_config.py con la configuración necesaria
+
+# 7. Iniciar servidor
+superset run -h 0.0.0.0 -p 8088 --with-threads --reload --debugger
 ```
 
-### 4. Verificar Todo Funciona
+### Configuración de Superset para Embedding
 
-```bash
-# Ejecutar verificación completa
-./test_final.sh
-```
-
-## 📁 Archivos del Proyecto
-
-```
-apache-superset-embedding/
-├── README.md                        # Esta guía
-├── iframe-example.html              # Aplicación de prueba funcionando
-├── setup_embedding_working.sh       # Script para habilitar embedding
-├── test_final.sh                   # Script de verificación
-└── superset/
-    ├── docker-compose-non-dev.yml  # Docker compose configurado
-    └── docker/pythonpath_dev/
-        └── superset_config_docker.py # Configuración crítica
-```
-
-## 🔧 Configuración Crítica
-
-### superset_config_docker.py (Completo)
+#### Archivo de configuración (superset_config.py)
 
 ```python
 # Feature flags - CRÍTICOS
 FEATURE_FLAGS = {
     "EMBEDDED_SUPERSET": True,  # ⚠️ OBLIGATORIO
     "ENABLE_TEMPLATE_PROCESSING": True,
-    "ALERT_REPORTS": True,
 }
 
 # Guest token configuration
-GUEST_TOKEN_JWT_SECRET = "mi-clave-superset-local-jwt-secret-minimo-32-caracteres-2024"
+GUEST_TOKEN_JWT_SECRET = "tu-clave-secreta-aqui-minimo-32-caracteres"
 GUEST_TOKEN_JWT_EXP_SECONDS = 300
 GUEST_ROLE_NAME = "Gamma"  # Rol con permisos de lectura
 
@@ -144,114 +113,167 @@ CORS_OPTIONS = {
     "origins": [
         "http://localhost:8080", "http://localhost:8080/",
         "http://127.0.0.1:8080", "http://127.0.0.1:8080/",
-        "http://localhost:8069", "http://localhost:8069/",  # Para Odoo
-        "null",
+        # Agregar tu IP local aquí
     ],
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "supports_credentials": True
 }
 
-# Seguridad permisiva para desarrollo
+# Seguridad para desarrollo
 WTF_CSRF_ENABLED = False
 TALISMAN_ENABLED = False
 ENABLE_IFRAME_EMBEDDING = True
 ```
 
-### docker-compose-non-dev.yml (Modificación)
+## Habilitar Embedding en Dashboards
 
-**Agregar esta línea en x-superset-volumes:**
+### Método 1: Interfaz de Superset (Manual)
 
-```yaml
-- ./docker/pythonpath_dev/superset_config_docker.py:/app/pythonpath_dev/superset_config_docker.py
-```
+1. **Ir a Superset**: http://localhost:8088 (admin/admin)
+2. **Abrir dashboard** → **Settings** → **Embed dashboard**
+3. **Agregar dominios permitidos**:
+   - `http://localhost:8080`
+   - `http://127.0.0.1:8080`
+   - Tu IP local con puerto 8080
+4. **Guardar configuración**
+5. **Copiar UUID de embedding** que aparece
 
-## 🎯 Configuración de Dashboards
-
-### JavaScript para la Aplicación
-
-```javascript
-// UUIDs obtenidos de la interfaz de Superset (ejemplo)
-let dashboards = [
-    {
-        id: "abc12345-6789-0123-4567-890abcdef123",
-        dashboard_title: "Tu Primer Dashboard",
-        uuid: "abc12345-6789-0123-4567-890abcdef123"
-    },
-    {
-        id: "def67890-1234-5678-9012-345abcdef678",
-        dashboard_title: "Dashboard de Ventas",
-        uuid: "def67890-1234-5678-9012-345abcdef678"
-    }
-];
-
-// ⚠️ IMPORTANTE: Reemplaza estos UUIDs con los que obtengas de tu Superset
-```
-
-### Flujo de Integración
-
-```javascript
-// Configuración dinámica basada en el entorno
-const SUPERSET_URL = 'http://localhost:8088';  // Ajustar según tu instalación
-
-// 1. Login admin
-const response = await fetch(`${SUPERSET_URL}/api/v1/security/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'admin', password: 'admin', provider: 'db' })
-});
-const accessToken = (await response.json()).access_token;
-
-// 2. Generar guest token
-const guestResponse = await fetch(`${SUPERSET_URL}/api/v1/security/guest_token/`, {
-    method: 'POST',
-    headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-        user: { username: 'guest_user', first_name: 'Guest', last_name: 'User' },
-        resources: [{ type: 'dashboard', id: 'UUID-DEL-EMBEDDING' }],
-        rls: []
-    })
-});
-const guestToken = (await guestResponse.json()).token;
-
-// 3. Embeber con SDK
-await supersetEmbeddedSdk.embedDashboard({
-    id: "UUID-DEL-EMBEDDING",
-    supersetDomain: SUPERSET_URL,
-    mountPoint: document.getElementById('superset-container'),
-    fetchGuestToken: () => guestToken,
-    dashboardUiConfig: { hideTitle: false, hideTab: false, hideChartControls: false }
-});
-```
-
-## 🛠️ Scripts Útiles
+### Método 2: Script Automatizado
 
 ```bash
+# Configurar script con tu URL de Superset
+vim setup_embedding_working.sh
+
 # Listar dashboards disponibles
 ./setup_embedding_working.sh
 
 # Habilitar embedding para dashboard específico
-./setup_embedding_working.sh enable 1
+./setup_embedding_working.sh enable <dashboard_id>
+```
 
-# Verificar que todo funciona
+## Uso de las Aplicaciones
+
+### Aplicación Principal (Recomendado)
+
+**`generic_superset_embedder.html`** - Aplicación completa con configuración dinámica
+
+```bash
+# Iniciar servidor web
+python3 -m http.server 8080
+
+# Abrir: http://localhost:8080/generic_superset_embedder.html
+```
+
+**Funcionalidades:**
+- Configuración dinámica de URL de Superset desde la interfaz
+- Detección automática de entorno (desarrollo/producción)
+- Descubrimiento automático de dashboards con embedding habilitado
+- Manejo avanzado de errores y debugging
+- Interfaz moderna y responsive
+- No requiere configuración previa de URLs o UUIDs
+
+**Flujo de uso:**
+1. Abrir la aplicación en el navegador
+2. Introducir URL de Superset (ej: `http://localhost:8088`)
+3. Introducir credenciales de administrador
+4. Hacer clic en "Conectar y Cargar Dashboards"
+5. Seleccionar dashboard de la lista
+6. Hacer clic en "Cargar Dashboard"
+
+### Ejemplos y Pruebas de Concepto
+
+**`iframe-example.html`** - Ejemplo básico para aprendizaje
+- Configuración hardcodeada en el código
+- Útil para entender el flujo básico
+- Requiere modificar URLs y UUIDs manualmente
+
+## Estructura del Repositorio
+
+```
+apache-superset-embedding/
+├── README.md                          # Esta guía
+├── generic_superset_embedder.html     # Aplicación principal
+├── iframe-example.html                # Ejemplo básico
+├── setup_embedding_working.sh         # Script de configuración
+└── test_final.sh                      # Script de verificación
+```
+
+### Archivos que se crean durante la instalación:
+
+Después de clonar el repositorio oficial de Superset:
+
+```
+superset/
+├── docker/
+│   └── pythonpath_dev/
+│       └── superset_config_docker.py  # Configuración para Docker (copiar/crear)
+└── docker-compose-non-dev.yml         # Docker compose modificado (copiar/crear)
+```
+
+## Archivos Principales
+
+| Archivo | Descripción | Uso Recomendado |
+|---------|-------------|-----------------|
+| `generic_superset_embedder.html` | **Aplicación principal** - Configuración dinámica completa | Producción y desarrollo diario |
+| `iframe-example.html` | Ejemplo básico para aprendizaje | Prueba de concepto y comprensión del flujo |
+
+## Scripts de Utilidad
+
+| Script | Función | Comando |
+|--------|---------|---------|
+| `setup_embedding_working.sh` | Configurar embedding automáticamente | `./setup_embedding_working.sh [enable <id>]` |
+| `test_final.sh` | Verificar integración completa | `./test_final.sh` |
+
+## Verificación del Setup
+
+```bash
+# Ejecutar verificación completa
 ./test_final.sh
 ```
 
-## ⚠️ Solución de Problemas
+**Debe mostrar:**
+- ✅ Superset funcionando
+- ✅ CORS configurado  
+- ✅ Login funcionando
+- ✅ Guest tokens funcionando
 
-| Error | Solución |
-|-------|----------|
-| **CORS blocked** | URLs en CORS_OPTIONS deben tener ambas versiones (con/sin `/`) |
-| **403 Forbidden** | Configurar `GUEST_ROLE_NAME = "Gamma"` |
-| **404 Not Found** | Usar UUID correcto obtenido de interfaz Superset |
-| **Embedding no aparece** | 1) Verificar embedding habilitado manualmente<br/>2) Comprobar dominios permitidos<br/>3) Usar UUID correcto |
+## Resolución de Problemas Comunes
 
-## 🔐 Para Producción
+| Error | Causa | Solución |
+|-------|-------|----------|
+| **CORS blocked** | URLs no agregadas a CORS_OPTIONS | Agregar URLs con y sin `/` final |
+| **403 Forbidden** | Rol de guest mal configurado | Configurar `GUEST_ROLE_NAME = "Gamma"` |
+| **404 Not Found** | UUID incorrecto | Usar UUID de embedding desde interfaz |
+| **Dashboard no carga** | Embedding no habilitado | Habilitar desde Settings → Embed dashboard |
+| **Connection refused** | Superset no iniciado | Verificar `curl http://localhost:8088/health` |
+
+## Características Avanzadas
+
+### Detección Automática de Entorno
+
+La aplicación principal detecta automáticamente:
+- Entorno de desarrollo vs producción
+- URLs apropiadas según el contexto
+- Dashboards disponibles con embedding
+
+### Debug y Diagnósticos
+
+- Panel de debug integrado
+- Logs detallados en consola
+- Información de configuración exportable
+- Verificación de conectividad automática
+
+### Configuración Dinámica
+
+- Sin necesidad de hardcodear UUIDs
+- Configuración de credenciales desde interfaz
+- Detección automática de dashboards habilitados
+- Validación de configuración en tiempo real
+
+## Configuración para Producción
 
 ```python
-# Activar seguridad
+# Seguridad activada
 WTF_CSRF_ENABLED = True
 WTF_CSRF_EXEMPT_LIST = [
     'superset.views.core.dashboard_embedded',
@@ -259,54 +281,88 @@ WTF_CSRF_EXEMPT_LIST = [
 ]
 
 # CORS restrictivo
-CORS_OPTIONS = {"origins": ["https://tu-dominio-produccion.com"]}
+CORS_OPTIONS = {
+    "origins": ["https://tu-dominio-produccion.com"]
+}
 
-# Secret seguro
+# Secret seguro (mínimo 32 caracteres)
 GUEST_TOKEN_JWT_SECRET = "clave-ultra-segura-64-caracteres-minimo"
 ```
 
-## 🚀 Integración con Odoo
+## Integración con Otras Aplicaciones
 
-Mismo patrón:
+### Con Odoo
 
-1. **Controlador Odoo** que genere guest tokens
-2. **SDK en templates** Odoo
-3. **Configurar permisos** por usuario/grupo
-4. **Agregar dominios Odoo** a CORS_OPTIONS
+1. Crear controlador Odoo que genere guest tokens
+2. Usar SDK en templates QWeb
+3. Configurar permisos por usuario/grupo
+4. Agregar dominios de Odoo a CORS_OPTIONS
 
-## ✅ Verificación Final
+### Con React/Angular/Vue
 
-```bash
-./test_final.sh
+```javascript
+import { embedDashboard } from "@superset-ui/embedded-sdk";
+
+embedDashboard({
+    id: "embedding-uuid",
+    supersetDomain: "http://localhost:8088", // Configurar según tu entorno
+    mountPoint: document.getElementById("dashboard-container"),
+    fetchGuestToken: () => obtenerGuestTokenDesdeBackend(),
+    dashboardUiConfig: {
+        hideTitle: false,
+        hideTab: false,
+        hideChartControls: false
+    }
+});
 ```
 
-**Debe mostrar:**
-- ✅ Superset: http://localhost:8088 (o tu IP local)
-- ✅ CORS: Configurado
-- ✅ Login: Funcionando
-- ✅ Guest tokens: Funcionando
+**Nota**: En `generic_superset_embedder.html` esto se maneja automáticamente tomando la URL del formulario.
 
----
+## API Reference
 
-## 📋 Configuración Personalizada
+### Endpoints Utilizados
 
-### Variables a Personalizar
+- `GET /health` - Verificación de estado
+- `POST /api/v1/security/login` - Autenticación admin
+- `GET /api/v1/dashboard/` - Listar dashboards
+- `GET /api/v1/dashboard/{id}/embedded` - Obtener UUID de embedding
+- `POST /api/v1/security/guest_token/` - Generar guest token
 
-1. **IP/URL de Superset**: Por defecto `localhost:8088`, cambiar por la IP de tu servidor
-2. **UUIDs de Dashboards**: Obtener desde la interfaz de Superset
-3. **Dominios CORS**: Agregar las URLs de tu aplicación
-4. **Credenciales**: Usar credenciales seguras en producción
+### Flujo de Autenticación
 
-### Archivos a Modificar
+1. **Login admin** → Obtener access token
+2. **Verificar embedding** → Comprobar UUID de embedding disponible
+3. **Generar guest token** → Usando embedding UUID
+4. **Embeber dashboard** → Con guest token y embedding UUID
 
-- `superset_config_docker.py` → CORS_OPTIONS origins
-- `iframe-example.html` → SUPERSET_URL y dashboards array
-- `setup_embedding_working.sh` → SUPERSET_URL
-- `test_final.sh` → URLs de verificación
+## Soporte de Navegadores
+
+- Chrome 60+
+- Firefox 55+
+- Safari 12+
+- Edge 79+
+
+## Contribuciones
+
+1. Fork del repositorio
+2. Crear rama de feature
+3. Realizar cambios
+4. Probar con `test_final.sh`
+5. Enviar pull request
+
+## Recursos Adicionales
+
+- [Apache Superset Documentation](https://superset.apache.org/)
+- [Embedded SDK Documentation](https://github.com/apache/superset/tree/master/superset-embedded-sdk)
+- [Superset Community](https://superset.apache.org/community)
+
+## Soporte
+
+- [Issues](https://github.com/SantipBarber/apache-superset-embedding/issues) para bugs
+- [Discussions](https://github.com/SantipBarber/apache-superset-embedding/discussions) para preguntas
+- [Documentación oficial](https://superset.apache.org/docs/intro) para problemas de Superset
 
 ---
 
 **Estado**: ✅ **INTEGRACIÓN LISTA PARA CUALQUIER ENTORNO**  
-**Listo para**: Producción y integración con Odoo
-
-**Para soporte**: `docker-compose -f superset/docker-compose-non-dev.yml logs superset`
+**Nota**: Proyecto no oficial de la comunidad. Para soporte oficial consultar [Apache Superset](https://github.com/apache/superset).
